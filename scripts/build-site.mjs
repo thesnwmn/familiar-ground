@@ -10,10 +10,12 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(out);
 
 const entries = [];
-for (const name of readdirSync(join(root, "prototypes")).sort()) {
+const prototypesDir = join(root, "prototypes");
+const names = existsSync(prototypesDir) ? readdirSync(prototypesDir).sort() : [];
+for (const name of names) {
   const dir = join(root, "prototypes", name);
   const dist = join(dir, "dist");
-  if (!existsSync(dist)) continue;
+  if (!existsSync(dist) || !existsSync(join(dir, "package.json"))) continue;
   cpSync(dist, join(out, name), { recursive: true });
   const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
   entries.push({ name, description: pkg.description ?? "" });
