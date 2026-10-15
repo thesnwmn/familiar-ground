@@ -76,6 +76,7 @@ a {
   gap: 8px;
   margin: 6px 0 !important;
 }
+#actions select,
 #actions button {
   min-width: 44px;
   min-height: 40px;
@@ -88,6 +89,19 @@ a {
   font-size: 15px;
   touch-action: manipulation;
 }
+#actions select:focus,
 #actions button:active {
   background: #333;
+}
+#screen {
+  position: relative;
+  overflow: hidden;
+}
+#screen canvas.fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
 }

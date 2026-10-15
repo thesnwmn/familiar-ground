@@ -8,63 +8,44 @@ import {
   isWalkable,
   lngLatToTile,
   tileToLngLat,
-  type Chunk,
 } from "@familiar-ground/world-core";
-import { Display } from "rot-js";
-import { GROUND_GLYPHS, NAMED_BUILDING, PLAYER_GLYPH, POI_GLYPH, STRUCTURE_FG, UNLOADED } from "./glyphs.ts";
 import { createIdbDeltaStore } from "./idbStore.ts";
+import { poiAt } from "./pois.ts";
+import type { Renderer, View } from "./renderers/types.ts";
+import { STYLES, styleById } from "./styles.ts";
 import { createWorkerProvider } from "./workerProvider.ts";
 
-// --- Parameters: ?lat=&lng=&seed=&tiles= (tiles: TileJSON or .pmtiles URL; default OpenFreeMap) ---
+// --- Parameters: ?lat=&lng=&seed=&style=&tiles= (tiles: TileJSON or .pmtiles URL; default OpenFreeMap) ---
 const params = new URLSearchParams(location.search);
-const num = (k: string, d: number) => (Number.isFinite(Number(params.get(k))) && params.get(k) !== null ? Number(params.get(k)) : d);
+const num = (k: string, d: number) => (params.get(k) !== null && Number.isFinite(Number(params.get(k))) ? Number(params.get(k)) : d);
 const start = { lat: num("lat", 51.5072), lng: num("lng", -0.1276) };
 const seed = Math.floor(num("seed", 1));
 const tilesUrl = params.get("tiles") ?? undefined;
 
-const back = document.getElementById("back") as HTMLAnchorElement;
-back.href = import.meta.env.DEV ? `http://localhost:5173/#16/${start.lat}/${start.lng}` : `../00-picker/#16/${start.lat}/${start.lng}`;
+const pickerUrl = import.meta.env.DEV ? "http://localhost:5173/" : "../00-picker/";
+(document.getElementById("back") as HTMLAnchorElement).href = `${pickerUrl}#16/${start.lat}/${start.lng}`;
 
-// --- World ---
+const screen = document.getElementById("screen")!;
 const statusEl = document.getElementById("status")!;
 const infoEl = document.getElementById("info")!;
 let dirty = true;
-const poiCells = new Map<Chunk, Map<number, string>>();
 
-const world = new World(createWorkerProvider(tilesUrl, seed), createIdbDeltaStore(), `v1:${tilesUrl ?? "ofm"}:${seed}:`, (chunk) => {
-  poiCells.set(chunk, new Map(chunk.pois.map((p) => [p.y * chunk.size + p.x, p.name ?? p.subclass ?? p.cls])));
-  dirty = true;
-});
+// --- World (shared by every style; switching style keeps the world and your changes) ---
+let renderer: Renderer | undefined;
+const world = new World(
+  createWorkerProvider(tilesUrl, seed),
+  createIdbDeltaStore(),
+  `v1:${tilesUrl ?? "ofm"}:${seed}:`,
+  (chunk) => {
+    renderer?.chunkLoaded?.(chunk);
+    dirty = true;
+  },
+  (chunk) => renderer?.chunkEvicted?.(chunk),
+);
 
 const t = lngLatToTile(start, CHUNK_ZOOM);
 const player = { x: Math.floor(t.x * CHUNK_CELLS), y: Math.floor(t.y * CHUNK_CELLS), fx: 0, fy: -1 };
-
-// --- Display ---
-const display = new Display({ fontSize: 16, fontFamily: "ui-monospace, Menlo, Consolas, monospace", bg: "#000" });
-const screen = document.getElementById("screen")!;
-screen.append(display.getContainer()!);
-/**
- * Zoom levels: larger glyphs when zoomed in, then several map cells per character when zoomed out.
- * `speed` scales joystick movement, so zoomed-out views don't race across the map.
- */
-const ZOOM_LEVELS = [
-  { fontSize: 32, step: 1, speed: 1 },
-  { fontSize: 24, step: 1, speed: 1 },
-  { fontSize: 16, step: 1, speed: 0.85 },
-  { fontSize: 16, step: 2, speed: 0.7 },
-  { fontSize: 16, step: 4, speed: 0.55 },
-];
-let zoomLevel = 2;
-/** Map cells per character at the current zoom level. */
-let zoom = 1;
-
-function resize(): void {
-  const [cols, rows] = display.computeSize(screen.clientWidth, screen.clientHeight);
-  display.setOptions({ width: Math.max(10, cols), height: Math.max(5, rows) });
-  dirty = true;
-}
-window.addEventListener("resize", resize);
-resize();
+const view: View = { world, player, zoomLevel: 0 };
 
 function cellAt(gx: number, gy: number) {
   const c = world.cell(gx, gy);
@@ -72,38 +53,48 @@ function cellAt(gx: number, gy: number) {
   return { chunk: c.chunk, i: c.i, ground: c.chunk.ground[c.i]!, structure: c.chunk.structure[c.i]! };
 }
 
-function render(): void {
-  const { width, height } = display.getOptions();
-  // Snap the camera to whole characters when zoomed out, so the map scrolls a character at a
-  // time instead of shimmering as the sampled cells shift under it.
-  const left = Math.floor(player.x / zoom) * zoom - Math.floor(width / 2) * zoom;
-  const top = Math.floor(player.y / zoom) * zoom - Math.floor(height / 2) * zoom;
-  for (let sy = 0; sy < height; sy++) {
-    for (let sx = 0; sx < width; sx++) {
-      const gx = left + sx * zoom;
-      const gy = top + sy * zoom;
-      const c = cellAt(gx, gy);
-      if (!c) {
-        display.draw(sx, sy, ...UNLOADED);
-        continue;
-      }
-      let [ch, fg, bg] = GROUND_GLYPHS[c.ground as Ground];
-      const s = STRUCTURE_FG[c.structure as Structure];
-      if (c.structure === Structure.BUILDING && c.chunk.buildings[c.chunk.building[c.i]!]?.kind !== "building") {
-        [ch, fg, bg] = NAMED_BUILDING;
-      } else if (s) {
-        [ch, fg] = s;
-        bg = s[2] ?? bg;
-      }
-      if (zoom === 1 && poiCells.get(c.chunk)?.has(c.i)) [ch, fg] = POI_GLYPH;
-      if (gx === player.x && gy === player.y) [ch, fg] = PLAYER_GLYPH;
-      display.draw(sx, sy, ch, fg, bg);
-    }
-  }
-  // At zoomed-out levels the player's own cell may not be sampled; always draw them at the centre.
-  if (zoom > 1) display.draw(Math.floor(width / 2), Math.floor(height / 2), PLAYER_GLYPH[0], PLAYER_GLYPH[1], "#c03");
-}
+// --- Styles ---
+const styleSelect = document.getElementById("style") as HTMLSelectElement;
+for (const s of STYLES) styleSelect.append(new Option(s.label, s.id));
+let styleRequest = 0;
 
+async function setStyle(id: string | null): Promise<void> {
+  const info = styleById(id);
+  const request = ++styleRequest;
+  styleSelect.value = info.id;
+  statusEl.textContent = `Loading ${info.label}…`;
+  let next: Renderer;
+  try {
+    next = await info.load();
+  } catch (err) {
+    statusEl.textContent = `Couldn't load ${info.label}: ${(err as Error).message}`;
+    return;
+  }
+  if (request !== styleRequest) return next.destroy();
+  renderer?.destroy();
+  renderer = next;
+  renderer.mount(screen);
+  renderer.resize(screen.clientWidth, screen.clientHeight);
+  for (const chunk of world.loaded()) renderer.chunkLoaded?.(chunk);
+  view.zoomLevel = renderer.defaultZoom;
+  params.set("style", info.id);
+  history.replaceState(null, "", `?${params}`);
+  document.title = `Familiar Ground: ${info.label}`;
+  statusEl.textContent = "";
+  dirty = true;
+  void stream();
+}
+styleSelect.addEventListener("change", () => {
+  void setStyle(styleSelect.value);
+  screen.focus();
+});
+
+new ResizeObserver(() => {
+  renderer?.resize(screen.clientWidth, screen.clientHeight);
+  dirty = true;
+}).observe(screen);
+
+// --- HUD ---
 function describe(gx: number, gy: number): string {
   const c = cellAt(gx, gy);
   if (!c) return "unloaded";
@@ -115,7 +106,7 @@ function describe(gx: number, gy: number): string {
   }
   if (c.structure === Structure.WALL) return "wall";
   if (c.structure === Structure.TREE) return "tree";
-  const poi = poiCells.get(c.chunk)?.get(c.i);
+  const poi = poiAt(c.chunk, c.i);
   return (poi ? `${poi} · ` : "") + GROUND_NAMES[c.ground as Ground].toLowerCase().replace("_", " ");
 }
 
@@ -123,17 +114,18 @@ function updateHud(): void {
   const here = tileToLngLat(player.x / CHUNK_CELLS, player.y / CHUNK_CELLS, CHUNK_ZOOM);
   const c = cellAt(player.x, player.y);
   const cellM = c ? `${c.chunk.cellSizeM.toFixed(1)} m/cell` : "";
+  const levels = renderer?.zoomLevels.length ?? 1;
   infoEl.textContent =
-    `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)} · seed ${seed} · zoom ${zoomLevel + 1}/${ZOOM_LEVELS.length} · ${cellM} · ` +
+    `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)} · seed ${seed} · zoom ${view.zoomLevel + 1}/${levels} · ${cellM} · ` +
     `here: ${describe(player.x, player.y)} · facing: ${describe(player.x + player.fx, player.y + player.fy)}`;
 }
 
 // --- Streaming ---
-const VIEW_RADIUS = () => Math.max(display.getOptions().width, display.getOptions().height) * zoom;
 let loadError = false;
 
 async function stream(): Promise<void> {
-  const r = VIEW_RADIUS();
+  if (!renderer) return;
+  const r = renderer.viewRadius(view);
   statusEl.textContent = "Loading map data…";
   try {
     await world.ensureAround(player.x, player.y, r);
@@ -197,34 +189,35 @@ function move(dx: number, dy: number, steps: number): void {
   dirty = true;
 }
 
-/** Breaks whatever is in front: buildings and walls become rubble, trees are felled. */
-function breakFacing(): void {
+function editFacing(apply: (gx: number, gy: number, structure: number, ground: number) => boolean): void {
   const [fx, fy] = [player.x + player.fx, player.y + player.fy];
   const c = cellAt(fx, fy);
-  if (c && c.structure !== Structure.NONE) {
-    if (c.structure !== Structure.TREE) world.edit(fx, fy, "ground", Ground.RUBBLE);
-    world.edit(fx, fy, "structure", Structure.NONE);
+  if (c && apply(fx, fy, c.structure, c.ground)) {
+    renderer?.chunkChanged?.(c.chunk);
+    dirty = true;
   }
-  dirty = true;
+}
+
+/** Breaks whatever is in front: buildings and walls become rubble, trees are felled. */
+function breakFacing(): void {
+  editFacing((x, y, structure) => {
+    if (structure === Structure.NONE) return false;
+    if (structure !== Structure.TREE) world.edit(x, y, "ground", Ground.RUBBLE);
+    return world.edit(x, y, "structure", Structure.NONE);
+  });
 }
 
 function buildFacing(): void {
-  const [fx, fy] = [player.x + player.fx, player.y + player.fy];
-  const c = cellAt(fx, fy);
-  if (c && c.structure === Structure.NONE && c.ground !== Ground.WATER) world.edit(fx, fy, "structure", Structure.WALL);
-  dirty = true;
+  editFacing((x, y, structure, ground) =>
+    structure === Structure.NONE && ground !== Ground.WATER ? world.edit(x, y, "structure", Structure.WALL) : false,
+  );
 }
 
 function setZoomLevel(level: number): void {
-  const next = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, level));
-  if (next === zoomLevel && display.getOptions().fontSize === ZOOM_LEVELS[next]!.fontSize) return;
-  zoomLevel = next;
-  const { fontSize, step } = ZOOM_LEVELS[next]!;
-  zoom = step;
-  if (display.getOptions().fontSize !== fontSize) {
-    display.setOptions({ fontSize });
-    resize();
-  }
+  if (!renderer) return;
+  const next = Math.max(0, Math.min(renderer.zoomLevels.length - 1, level));
+  if (next === view.zoomLevel) return;
+  view.zoomLevel = next;
   void stream();
   dirty = true;
 }
@@ -236,15 +229,18 @@ const DIRS: Record<string, [number, number]> = {
 };
 
 window.addEventListener("keydown", (e) => {
+  if (e.target instanceof HTMLSelectElement) return;
   const dir = DIRS[e.key];
+  const levels = renderer?.zoomLevels.length ?? 1;
   if (dir) {
     e.preventDefault();
     move(dir[0], dir[1], e.shiftKey ? 4 : 1);
   } else if (e.key === "x" || e.key === "X") breakFacing();
   else if (e.key === "b" || e.key === "B") buildFacing();
-  else if (e.key === "z" || e.key === "Z") setZoomLevel(zoomLevel === ZOOM_LEVELS.length - 1 ? 0 : zoomLevel + 1);
-  else if (e.key === "+" || e.key === "=") setZoomLevel(zoomLevel - 1);
-  else if (e.key === "-" || e.key === "_") setZoomLevel(zoomLevel + 1);
+  else if (e.key === "z" || e.key === "Z") setZoomLevel(view.zoomLevel === levels - 1 ? 0 : view.zoomLevel + 1);
+  else if (e.key === "+" || e.key === "=") setZoomLevel(view.zoomLevel - 1);
+  else if (e.key === "-" || e.key === "_") setZoomLevel(view.zoomLevel + 1);
+  else if (/^[1-9]$/.test(e.key) && STYLES[Number(e.key) - 1]) void setStyle(STYLES[Number(e.key) - 1]!.id);
 });
 
 // --- Mouse wheel zoom ---
@@ -255,7 +251,7 @@ screen.addEventListener(
     e.preventDefault();
     if (performance.now() - lastWheel < 150 || e.deltaY === 0) return;
     lastWheel = performance.now();
-    setZoomLevel(zoomLevel + (e.deltaY > 0 ? 1 : -1));
+    setZoomLevel(view.zoomLevel + (e.deltaY > 0 ? 1 : -1));
   },
   { passive: false },
 );
@@ -291,7 +287,8 @@ function joystickTick(): void {
     return;
   }
   const t = Math.min(1, (dist - STICK_DEADZONE) / (STICK_MAX - STICK_DEADZONE));
-  const speed = (WALK_SPEED + (RUN_SPEED - WALK_SPEED) * t * t) * ZOOM_LEVELS[zoomLevel]!.speed;
+  const zoomSpeed = renderer?.zoomLevels[view.zoomLevel]?.speed ?? 1;
+  const speed = (WALK_SPEED + (RUN_SPEED - WALK_SPEED) * t * t) * zoomSpeed;
   joystick.travel += (speed * TICK_MS) / 1000;
   const steps = Math.floor(joystick.travel);
   if (steps === 0) return;
@@ -333,7 +330,7 @@ screen.addEventListener("pointerdown", (e) => {
     showStick();
   } else if (pointers.size === 2) {
     endJoystick();
-    pinch = { startDist: pinchDistance(), startLevel: zoomLevel };
+    pinch = { startDist: pinchDistance(), startLevel: view.zoomLevel };
   }
 });
 
@@ -371,8 +368,8 @@ screen.addEventListener("pointercancel", pointerEnd);
 const ACTIONS: Record<string, () => void> = {
   break: breakFacing,
   build: buildFacing,
-  "zoom-in": () => setZoomLevel(zoomLevel - 1),
-  "zoom-out": () => setZoomLevel(zoomLevel + 1),
+  "zoom-in": () => setZoomLevel(view.zoomLevel - 1),
+  "zoom-out": () => setZoomLevel(view.zoomLevel + 1),
 };
 for (const button of document.querySelectorAll<HTMLButtonElement>("#actions button")) {
   button.addEventListener("click", () => {
@@ -381,19 +378,21 @@ for (const button of document.querySelectorAll<HTMLButtonElement>("#actions butt
   });
 }
 
+// --- Main loop ---
 function frame(): void {
-  if (dirty) {
-    dirty = false;
-    render();
+  if (dirty && renderer) {
+    dirty = renderer.render(view) === true;
     updateHud();
   }
   requestAnimationFrame(frame);
 }
 
-statusEl.textContent = "Loading map data…";
-void stream().then(() => {
-  if (!loadError) placePlayer();
-  dirty = true;
-});
+statusEl.textContent = "Loading…";
+void setStyle(params.get("style")).then(() =>
+  stream().then(() => {
+    if (!loadError) placePlayer();
+    dirty = true;
+  }),
+);
 screen.focus();
 frame();

@@ -20,3 +20,4 @@ A pnpm TypeScript monorepo of browser prototypes for a game generated from real-
 - Prototypes are Vite apps under `prototypes/NN-name/` with `base: "./"` so they work under the GitHub Pages sub-path. `scripts/build-site.mjs` picks up any prototype that has a `dist/` after `pnpm build`.
 - Tests must not hit the network: build vector tile fixtures from GeoJSON (see `packages/world-core/test/fixtures.ts`).
 - Keep the OpenStreetMap attribution visible in every prototype.
+- Rendering styles live in `prototypes/01-play/src/renderers/`. Renderers only draw; they never edit the world. Shared input, HUD and streaming live in `prototypes/01-play/src/main.ts`.

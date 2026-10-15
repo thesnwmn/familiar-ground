@@ -2,8 +2,24 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./style.css";
 
-/** Prototypes that accept ?lat=&lng=&seed=. Dev servers run on fixed ports; on Pages they're siblings. */
-const PROTOTYPES = [{ name: "ASCII", url: import.meta.env.DEV ? "http://localhost:5174/" : "../01-ascii/" }];
+/** The game accepts ?lat=&lng=&seed=&style=. Dev servers run on fixed ports; on Pages they're siblings. */
+const PLAY_URL = import.meta.env.DEV ? "http://localhost:5174/" : "../01-play/";
+const STYLES = [
+  { id: "ascii", label: "ASCII", hint: "Roguelike glyphs" },
+  { id: "pixel", label: "Pixel art", hint: "3/4 top-down tiles" },
+  { id: "iso", label: "Isometric", hint: "SimCity-style blocks" },
+  { id: "sketch", label: "Sketch", hint: "Hand-drawn ink map" },
+  { id: "voxel", label: "Voxel 3D", hint: "Blocky 3D" },
+  { id: "lowpoly", label: "Low-poly 3D", hint: "Pastel diorama" },
+];
+const STYLE_KEY = "familiar-ground:style";
+let style = (() => {
+  try {
+    return localStorage.getItem(STYLE_KEY) ?? "pixel";
+  } catch {
+    return "pixel";
+  }
+})();
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const seedInput = $<HTMLInputElement>("seed");
@@ -40,21 +56,43 @@ function pick(lng: number, lat: number): void {
   renderLinks();
 }
 
+const styleList = $<HTMLDivElement>("styles");
+for (const st of STYLES) {
+  const label = document.createElement("label");
+  label.className = "style";
+  label.title = st.hint;
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = "style";
+  input.value = st.id;
+  input.checked = st.id === style;
+  input.addEventListener("change", () => {
+    style = st.id;
+    try {
+      localStorage.setItem(STYLE_KEY, style);
+    } catch {
+      // remembering the choice is a convenience only
+    }
+    renderLinks();
+  });
+  label.append(input, st.label);
+  styleList.append(label);
+}
+
 function renderLinks(): void {
   play.replaceChildren();
   if (!choice) return;
   const seed = Math.max(0, Math.floor(Number(seedInput.value) || 0));
-  for (const p of PROTOTYPES) {
-    const url = new URL(p.url, location.href);
-    url.searchParams.set("lat", choice.lat.toFixed(6));
-    url.searchParams.set("lng", choice.lng.toFixed(6));
-    url.searchParams.set("seed", String(seed));
-    const a = document.createElement("a");
-    a.className = "play";
-    a.href = url.toString();
-    a.textContent = `Play here: ${p.name}`;
-    play.append(a);
-  }
+  const url = new URL(PLAY_URL, location.href);
+  url.searchParams.set("lat", choice.lat.toFixed(6));
+  url.searchParams.set("lng", choice.lng.toFixed(6));
+  url.searchParams.set("seed", String(seed));
+  url.searchParams.set("style", style);
+  const a = document.createElement("a");
+  a.className = "play";
+  a.href = url.toString();
+  a.textContent = `Play here: ${STYLES.find((s) => s.id === style)?.label ?? style}`;
+  play.append(a);
 }
 
 // Place search via Nominatim: one request per explicit search (no autocomplete), per its usage policy.
