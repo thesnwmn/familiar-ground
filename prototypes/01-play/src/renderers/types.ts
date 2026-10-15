@@ -6,6 +6,8 @@ export interface View {
   player: { x: number; y: number; fx: number; fy: number };
   /** Index into the renderer's own `zoomLevels`. */
   zoomLevel: number;
+  /** World seed, for renderers that add deterministic decoration (biomes, lamps). */
+  seed: number;
 }
 
 export interface ZoomLevel {
