@@ -24,7 +24,8 @@ let style = (() => {
 })();
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-if (import.meta.env.DEV) $<HTMLAnchorElement>("lab").href = "http://localhost:5175/";
+const LAB_URL = import.meta.env.DEV ? "http://localhost:5175/" : "../02-gallery/";
+$<HTMLAnchorElement>("lab").href = LAB_URL;
 const seedInput = $<HTMLInputElement>("seed");
 const picked = $<HTMLParagraphElement>("picked");
 const play = $<HTMLDivElement>("play");
@@ -95,7 +96,14 @@ function renderLinks(): void {
   a.className = "play";
   a.href = url.toString();
   a.textContent = `Play here: ${STYLES.find((s) => s.id === style)?.label ?? style}`;
-  play.append(a);
+  const lab = new URL(LAB_URL, location.href);
+  lab.searchParams.set("spots", `${choice.lat.toFixed(5)},${choice.lng.toFixed(5)}`);
+  lab.searchParams.set("seed", String(seed));
+  const b = document.createElement("a");
+  b.className = "play secondary";
+  b.href = lab.toString();
+  b.textContent = "See this spot in every style";
+  play.append(a, b);
 }
 
 // Place search via Nominatim: one request per explicit search (no autocomplete), per its usage policy.

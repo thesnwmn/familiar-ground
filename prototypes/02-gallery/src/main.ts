@@ -1,6 +1,6 @@
 import { CHUNK_CELLS, CHUNK_ZOOM, MemoryDeltaStore, World, lngLatToTile } from "@familiar-ground/world-core";
 import { createWorkerProvider } from "../../01-play/src/workerProvider.ts";
-import { DEFAULT_PLACES, PLACES, ZOOMS, type Place, type Zoom } from "./places.ts";
+import { DEFAULT_PLACES, PLACES as BUILT_IN, ZOOMS, parseSpot, spotPlace, type Place, type Zoom } from "./places.ts";
 import { Scene } from "./scene.ts";
 import { ALL_STYLES, GROUPS } from "./styles/index.ts";
 import type { StillStyle } from "./styles/types.ts";
@@ -10,8 +10,18 @@ const tilesUrl = params.get("tiles") ?? undefined;
 const SIZES = { s: [240, 180], m: [360, 270], l: [480, 360] } as const;
 type SizeKey = keyof typeof SIZES;
 
+// Your own spots: ?spots=lat,lng,name;lat,lng,…  (added from the box below, or from the picker).
+const spots: Place[] = (params.get("spots") ?? "")
+  .split(";")
+  .map((s) => {
+    const [lat, lng, ...name] = s.split(",");
+    return lat && lng && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) ? spotPlace(Number(lat), Number(lng), name.join(",")) : null;
+  })
+  .filter((p): p is Place => !!p);
+let PLACES: Place[] = [...spots, ...BUILT_IN];
+
 const state = {
-  places: (params.get("places")?.split(",") ?? DEFAULT_PLACES).filter((id) => PLACES.some((p) => p.id === id)),
+  places: (params.get("places")?.split(",") ?? (spots.length ? spots.map((s) => s.id) : DEFAULT_PLACES)).filter((id) => PLACES.some((p) => p.id === id)),
   zooms: params.get("zooms")?.split(",") ?? ZOOMS.map((z) => z.id),
   groups: params.get("groups")?.split(",") ?? GROUPS,
   size: (params.get("size") as SizeKey) in SIZES ? (params.get("size") as SizeKey) : ("m" as SizeKey),
@@ -125,6 +135,8 @@ function chips(el: HTMLElement, items: { id: string; label: string; note?: strin
 function syncUrl(): void {
   const q = new URLSearchParams(params);
   q.set("places", state.places.join(","));
+  if (spots.length) q.set("spots", spots.map((s) => `${s.lat},${s.lng}${s.name.startsWith("Spot ") ? "" : `,${s.name}`}`).join(";"));
+  else q.delete("spots");
   q.set("zooms", state.zooms.join(","));
   q.set("size", state.size);
   q.set("seed", String(state.seed));
@@ -133,7 +145,46 @@ function syncUrl(): void {
   history.replaceState(null, "", `?${q}`);
 }
 
-chips($("places"), PLACES.map((p) => ({ id: p.id, label: p.name, note: p.layout === "grid" ? "grid" : "organic" })), state.places, () => build());
+function placeChips(): void {
+  chips($("places"), PLACES.map((p) => ({ id: p.id, label: p.name, note: p.layout === "spot" ? "yours" : p.layout })), state.places, () => build());
+}
+placeChips();
+
+function addSpot(lat: number, lng: number, name?: string): void {
+  const p = spotPlace(lat, lng, name);
+  if (!spots.some((s) => s.id === p.id)) spots.unshift(p);
+  PLACES = [...spots, ...BUILT_IN];
+  if (!state.places.includes(p.id)) state.places.unshift(p.id);
+  placeChips();
+  build();
+  $("styles").scrollIntoView({ behavior: "smooth" });
+}
+
+const spotMsg = $("spot-msg");
+$<HTMLFormElement>("spot-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const at = parseSpot($<HTMLInputElement>("spot").value);
+  if (!at) {
+    spotMsg.textContent = "Couldn't find coordinates in that. Try \"51.5136, -0.1336\" or paste a map link.";
+    return;
+  }
+  spotMsg.textContent = "";
+  addSpot(at.lat, at.lng, $<HTMLInputElement>("spot-name").value);
+  $<HTMLInputElement>("spot").value = "";
+  $<HTMLInputElement>("spot-name").value = "";
+});
+$("locate").addEventListener("click", () => {
+  if (!navigator.geolocation) return void (spotMsg.textContent = "Location isn't available in this browser.");
+  spotMsg.textContent = "Finding you…";
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      spotMsg.textContent = "";
+      addSpot(pos.coords.latitude, pos.coords.longitude, "Where I am");
+    },
+    (err) => (spotMsg.textContent = `Couldn't get your location: ${err.message}`),
+    { enableHighAccuracy: true, timeout: 15000 },
+  );
+});
 chips($("zooms"), ZOOMS.map((z) => ({ id: z.id, label: z.name })), state.zooms, () => build());
 chips($("groups"), GROUPS.map((g) => ({ id: g, label: g })), state.groups, () => build());
 const sizeSel = $<HTMLSelectElement>("size");

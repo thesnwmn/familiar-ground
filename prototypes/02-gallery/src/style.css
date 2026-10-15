@@ -205,3 +205,16 @@ footer a {
   font-size: 13px;
   padding-top: 6px;
 }
+
+form.spot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+form.spot input#spot {
+  width: min(24em, 70vw);
+}
+form.spot input#spot-name {
+  width: 10em;
+}
