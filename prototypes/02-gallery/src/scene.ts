@@ -141,10 +141,10 @@ export class Scene {
       for (const b of chunk.buildings) {
         const outer = b.rings[0];
         if (!outer?.length) continue;
-        const key = b.id.startsWith("osm:") ? b.id : `${b.id}`;
-        const sig = `${key}:${Math.round(outer[0]!.x + ox)}:${Math.round(outer[0]!.y + oy)}`;
-        if (seenB.has(b.id.startsWith("osm:") ? key : sig)) continue;
-        seenB.add(b.id.startsWith("osm:") ? key : sig);
+        // The same building appears in every chunk it overlaps: dedupe by where its outline is, not by id.
+        const sig = `${Math.round((outer[0]!.x + ox) * 4)}:${Math.round((outer[0]!.y + oy) * 4)}:${outer.length}`;
+        if (seenB.has(sig)) continue;
+        seenB.add(sig);
         const rings = b.rings.map((r) => r.map((p) => ({ x: p.x + ox, y: p.y + oy })));
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (const p of rings[0]!) (minX = Math.min(minX, p.x)), (minY = Math.min(minY, p.y)), (maxX = Math.max(maxX, p.x)), (maxY = Math.max(maxY, p.y));
