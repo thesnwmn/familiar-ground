@@ -15,9 +15,9 @@ export const STYLES: StyleInfo[] = [
 export const DEFAULT_STYLE = "pixel";
 
 /** Style-lab styles (from the 02-gallery prototype), played through a generic adapter. Loaded on demand. */
-export async function labStyles(): Promise<{ id: string; label: string }[]> {
+export async function labStyles(): Promise<{ id: string; label: string; group: string }[]> {
   const { LAB_STYLES } = await import("../../02-gallery/src/styles/lab.ts");
-  return LAB_STYLES.map((s) => ({ id: `lab:${s.id}`, label: s.name }));
+  return LAB_STYLES.map((s) => ({ id: `lab:${s.id}`, label: s.rotatable ? `${s.name} ↻` : s.name, group: s.group }));
 }
 
 function labStyle(id: string): StyleInfo {

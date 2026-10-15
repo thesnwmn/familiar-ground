@@ -89,6 +89,10 @@ a {
   font-size: 15px;
   touch-action: manipulation;
 }
+#actions button[aria-pressed="true"] {
+  background: #2a5d8f;
+  border-color: #6af;
+}
 #actions select:focus,
 #actions button:active {
   background: #333;

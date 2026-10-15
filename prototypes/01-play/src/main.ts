@@ -45,7 +45,55 @@ const world = new World(
 
 const t = lngLatToTile(start, CHUNK_ZOOM);
 const player = { x: Math.floor(t.x * CHUNK_CELLS), y: Math.floor(t.y * CHUNK_CELLS), fx: 0, fy: -1 };
-const view: View = { world, player, zoomLevel: 0, seed };
+const view: View = { world, player, zoomLevel: 0, seed, angle: 0 };
+
+// --- Camera rotation (rotatable styles only): Q/E turn, two-finger twist, F follows the street ---
+const camera = {
+  target: params.get("angle") && params.get("angle") !== "auto" ? (num("angle", 0) * Math.PI) / 180 : 0,
+  follow: params.get("angle") === "auto",
+};
+const rotatable = () => !!renderer?.rotatable;
+function turn(by: number): void {
+  if (!rotatable()) return;
+  camera.follow = false;
+  camera.target += by;
+  updateCameraButtons();
+  dirty = true;
+}
+function toggleFollow(): void {
+  if (!rotatable()) return;
+  camera.follow = !camera.follow;
+  if (!camera.follow) camera.target = Math.round(view.angle / (Math.PI / 4)) * (Math.PI / 4);
+  updateCameraButtons();
+  dirty = true;
+}
+/** Eases the camera towards its target; returns true while still turning. */
+function stepCamera(): boolean {
+  if (!rotatable()) {
+    view.angle = 0;
+    return false;
+  }
+  if (camera.follow) {
+    const street = renderer?.streetAngle?.(view);
+    // A street runs both ways: aim for whichever way up is closest to where we are now.
+    if (street !== null && street !== undefined) camera.target = street + Math.round((view.angle - street) / Math.PI) * Math.PI;
+  }
+  const diff = camera.target - view.angle;
+  if (Math.abs(diff) < 0.003) {
+    view.angle = camera.target;
+    return false;
+  }
+  view.angle += diff * 0.2;
+  return true;
+}
+/** A screen direction turned into a world direction, snapped to the 8 grid directions. */
+function screenToWorld(dx: number, dy: number): [number, number] {
+  const a = rotatable() ? -view.angle : 0;
+  const wx = dx * Math.cos(a) - dy * Math.sin(a);
+  const wy = dx * Math.sin(a) + dy * Math.cos(a);
+  const d = Math.hypot(wx, wy) || 1;
+  return [Math.abs(wx) > d * 0.38 ? Math.sign(wx) : 0, Math.abs(wy) > d * 0.38 ? Math.sign(wy) : 0];
+}
 
 function cellAt(gx: number, gy: number) {
   const c = world.cell(gx, gy);
@@ -56,12 +104,19 @@ function cellAt(gx: number, gy: number) {
 // --- Styles ---
 const styleSelect = document.getElementById("style") as HTMLSelectElement;
 for (const s of STYLES) styleSelect.append(new Option(s.label, s.id));
-// The style lab's ~70 styles, added once their (lazy) code has loaded.
-const labGroup = document.createElement("optgroup");
-labGroup.label = "Style lab (unoptimised)";
-styleSelect.append(labGroup);
+// The style lab's styles (grouped as in the lab), added once their (lazy) code has loaded.
 const labLoaded = labStyles().then((list) => {
-  for (const s of list) labGroup.append(new Option(s.label, s.id));
+  const groups = new Map<string, HTMLOptGroupElement>();
+  for (const s of list) {
+    let g = groups.get(s.group);
+    if (!g) {
+      g = document.createElement("optgroup");
+      g.label = `Lab: ${s.group}`;
+      groups.set(s.group, g);
+      styleSelect.append(g);
+    }
+    g.append(new Option(s.label, s.id));
+  }
   styleSelect.value = params.get("style") ?? styleSelect.value;
 });
 let styleRequest = 0;
@@ -86,6 +141,7 @@ async function setStyle(id: string | null): Promise<void> {
   renderer.resize(screen.clientWidth, screen.clientHeight);
   for (const chunk of world.loaded()) renderer.chunkLoaded?.(chunk);
   view.zoomLevel = renderer.defaultZoom;
+  updateCameraButtons();
   params.set("style", info.id);
   history.replaceState(null, "", `?${params}`);
   document.title = `Familiar Ground: ${info.label}`;
@@ -126,6 +182,7 @@ function updateHud(): void {
   const levels = renderer?.zoomLevels.length ?? 1;
   infoEl.textContent =
     `${here.lat.toFixed(5)}, ${here.lng.toFixed(5)} · seed ${seed} · zoom ${view.zoomLevel + 1}/${levels} · ${cellM} · ` +
+    (rotatable() ? `camera ${Math.round((((view.angle * 180) / Math.PI) % 360 + 360) % 360)}°${camera.follow ? " (following street)" : ""} · ` : "") +
     `here: ${describe(player.x, player.y)} · facing: ${describe(player.x + player.fx, player.y + player.fy)}`;
 }
 
@@ -243,8 +300,11 @@ window.addEventListener("keydown", (e) => {
   const levels = renderer?.zoomLevels.length ?? 1;
   if (dir) {
     e.preventDefault();
-    move(dir[0], dir[1], e.shiftKey ? 4 : 1);
-  } else if (e.key === "x" || e.key === "X") breakFacing();
+    const [mx, my] = screenToWorld(dir[0], dir[1]);
+    move(mx, my, e.shiftKey ? 4 : 1);
+  } else if (e.key === "q" || e.key === "Q") turn(-Math.PI / 4);
+  else if (e.key === "e" || e.key === "E") turn(Math.PI / 4);
+  else if (e.key === "f" || e.key === "F") toggleFollow(); else if (e.key === "x" || e.key === "X") breakFacing();
   else if (e.key === "b" || e.key === "B") buildFacing();
   else if (e.key === "z" || e.key === "Z") setZoomLevel(view.zoomLevel === levels - 1 ? 0 : view.zoomLevel + 1);
   else if (e.key === "+" || e.key === "=") setZoomLevel(view.zoomLevel - 1);
@@ -278,11 +338,15 @@ const RUN_SPEED = 22;
 const TICK_MS = 40;
 let joystick: { id: number; x0: number; y0: number; x: number; y: number; travel: number } | null = null;
 let joystickTimer: number | undefined;
-let pinch: { startDist: number; startLevel: number } | null = null;
+let pinch: { startDist: number; startLevel: number; startTwist: number; startAngle: number; twisting: boolean } | null = null;
 
 const pinchDistance = () => {
   const [a, b] = [...pointers.values()];
   return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+};
+const pinchTwist = () => {
+  const [a, b] = [...pointers.values()];
+  return a && b ? Math.atan2(b.y - a.y, b.x - a.x) : 0;
 };
 
 /** Analog joystick: speed grows with how far the knob is pushed; whole cells are taken as they accrue. */
@@ -302,9 +366,8 @@ function joystickTick(): void {
   const steps = Math.floor(joystick.travel);
   if (steps === 0) return;
   joystick.travel -= steps;
-  // 8 directions: include an axis when it carries a good share of the drag.
-  const mx = Math.abs(dx) > dist * 0.38 ? Math.sign(dx) : 0;
-  const my = Math.abs(dy) > dist * 0.38 ? Math.sign(dy) : 0;
+  // 8 directions (relative to the screen, so a turned camera still walks where you push).
+  const [mx, my] = screenToWorld(dx, dy);
   move(mx, my, steps);
 }
 
@@ -339,7 +402,7 @@ screen.addEventListener("pointerdown", (e) => {
     showStick();
   } else if (pointers.size === 2) {
     endJoystick();
-    pinch = { startDist: pinchDistance(), startLevel: view.zoomLevel };
+    pinch = { startDist: pinchDistance(), startLevel: view.zoomLevel, startTwist: pinchTwist(), startAngle: camera.target, twisting: false };
   }
 });
 
@@ -352,6 +415,19 @@ screen.addEventListener("pointermove", (e) => {
     // Each doubling of finger distance is roughly one zoom level in.
     const levels = Math.round(Math.log2(pinchDistance() / Math.max(1, pinch.startDist)) * 1.5);
     setZoomLevel(pinch.startLevel - levels);
+    // Twisting two fingers turns the camera (after a small threshold, so pinches don't wobble it).
+    if (rotatable()) {
+      let twist = pinchTwist() - pinch.startTwist;
+      twist = Math.atan2(Math.sin(twist), Math.cos(twist));
+      if (pinch.twisting || Math.abs(twist) > 0.25) {
+        pinch.twisting = true;
+        camera.follow = false;
+        camera.target = pinch.startAngle + twist;
+        view.angle = camera.target;
+        updateCameraButtons();
+        dirty = true;
+      }
+    }
   } else if (joystick && joystick.id === e.pointerId) {
     const first = Math.hypot(joystick.x - joystick.x0, joystick.y - joystick.y0) < STICK_DEADZONE;
     joystick.x = e.clientX;
@@ -379,7 +455,14 @@ const ACTIONS: Record<string, () => void> = {
   build: buildFacing,
   "zoom-in": () => setZoomLevel(view.zoomLevel - 1),
   "zoom-out": () => setZoomLevel(view.zoomLevel + 1),
+  "turn-left": () => turn(-Math.PI / 4),
+  "turn-right": () => turn(Math.PI / 4),
+  follow: toggleFollow,
 };
+function updateCameraButtons(): void {
+  for (const b of document.querySelectorAll<HTMLButtonElement>(".cam")) b.hidden = !rotatable();
+  document.querySelector<HTMLButtonElement>('[data-action="follow"]')?.setAttribute("aria-pressed", String(camera.follow));
+}
 for (const button of document.querySelectorAll<HTMLButtonElement>("#actions button")) {
   button.addEventListener("click", () => {
     ACTIONS[button.dataset.action ?? ""]?.();
@@ -389,8 +472,10 @@ for (const button of document.querySelectorAll<HTMLButtonElement>("#actions butt
 
 // --- Main loop ---
 function frame(): void {
+  const turning = !!renderer && stepCamera();
+  if (turning) dirty = true;
   if (dirty && renderer) {
-    dirty = renderer.render(view) === true;
+    dirty = renderer.render(view) === true || turning;
     updateHud();
   }
   requestAnimationFrame(frame);

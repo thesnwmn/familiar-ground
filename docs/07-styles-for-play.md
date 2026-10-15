@@ -1,6 +1,6 @@
 # 7. Styles for Play
 
-The style lab (`prototypes/02-gallery`) has ~70 looks. Most are not game views. This note sorts them for the game we actually want, top-down: **explore** a real place, **gather resources**, **fight enemies and gangs**, **enter buildings**. It also picks a direction.
+The style lab (`prototypes/02-gallery`) has ~140 looks. Most are not game views. This note sorts them for the game we actually want, top-down: **explore** a real place, **gather resources**, **fight enemies and gangs**, **enter buildings**. It also picks a direction.
 
 Every style in the lab carries a rating (A–D) with a one-line reason, and a "Play at…" link that launches it in the game so you can walk around in it.
 
@@ -56,13 +56,34 @@ Then there are **mechanics that are also views**: line of sight, fog of war, roo
 ### D: art toys
 Lego, cross-stitch, stained glass, pointillism, risograph, newsprint, sumi-e, felt, Boogie Woogie, topographic city, Braille, Dwarf Fortress, lava, candy. Lovely to look at; they'd fight the player in a real game.
 
+## Plans with walls (any surface, any camera)
+
+The plan and line styles were flat because they began as map looks. A camera doesn't care about the paint, though, so the lab now stands every plan look up with walls. There are about 30 surfaces, from clean, ligne claire, lit plan, moonlit, tactical and 16-bit to watercolour, blueprint, neon, noir, Obra Dinn, ruins, flood, medieval, winter, Frostpunk, desert and more. Each comes with:
+
+- **Oblique 3/4** (group *Walls: oblique 3/4*): pushed straight up the screen.
+- **From the player** (group *Walls: from the player*): GTA-style lean away from the screen centre.
+- **Low drone** and **cavalier** (an Ultima-style slant that shows two sides of every block) for some of them (group *Walls: other cameras*).
+
+Smooth vector lines plus walls are the best of both: real shapes, crisp edges, visible cover. The playable candidates now include **ligne claire oblique**, **tactical oblique**, **lit plan from the player** and **clean plan from the player**, each with actors and a HUD.
+
+## Turning the camera
+
+An oblique camera only shows south walls, so a gang hiding behind the north side of a block is invisible. Turning the camera fixes that, and it makes going round a building feel like going round it.
+
+- **How it works**: the flat ground is painted once and rotated as an image. Buildings are re-projected from a rotated copy of the scene, so walls always stand up the screen and you see a different set of them at each angle. Movement is relative to the screen (push up and you walk up the screen), snapped to the 8 grid directions.
+- **Controls in the game** (styles marked ↻): **Q**/**E** turn 45°, a two-finger twist turns freely, and **F** / *Follow street* turns the camera so the street you're on runs up the screen. Walk round a corner or a roundabout and the city swings round with you. The turn is eased so it doesn't snap.
+- **In the lab**: the *Camera angle* control (0°, 30°, 45°, 90°, 180°, follow the street) applies to every ↻ style.
+- **Feel**: follow-the-street is lovely when walking and disorienting when fighting. A good default is follow-the-street when exploring and a locked angle in combat (lock on the first shot), with Q/E always available. A minimap that keeps north up helps orientation.
+- **From the player** needs rotation less: the lean already shows walls on every side of you. Rotation there is mainly for lining the view up with the street.
+
 ## Zoom for play
 
 The lab now has a **Game** zoom (7 px per cell, roughly 50 × 100 m on a phone in portrait). It's the right default for fights: you see a block or two ahead and gangs at the next corner. Use **Close** (12+) inside buildings and **Street** (4) for exploring and travel. **District** (1–2) is a map, not a play zoom. Zoom should follow context: closer indoors and in combat, wider when running or driving.
 
 ## Recommendation
 
-- **Camera**: perspective from the player with a moderate lean, or oblique 3/4 if playtesting finds the lean tiring. Both use real footprints, and both are built in the lab.
+- **Camera**: perspective from the player with a moderate lean, or oblique 3/4 with a turnable / follow-the-street camera if playtesting finds the lean tiring. Both use real footprints, and both are built in the lab.
+- **Lines**: draw it as a plan with walls (ligne claire, clean or tactical), not as pixels from cells: smooth lines, real shapes and readable cover.
 - **Visibility**: line of sight from the player, with remembered areas greyed. At night the lighting decides what you can see, and a torch extends it.
 - **Surface**: real shapes drawn first, optionally pixelated, with Lumen's lighting. Themes from the lab sit on top.
 - **Interiors**: roof cutaway with rooms generated from the footprint (BSP), seeded by building id. Loot comes from what the building is (pharmacy → medicine, café/supermarket → food, garage/hardware → metal).

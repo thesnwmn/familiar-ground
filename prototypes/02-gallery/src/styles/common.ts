@@ -25,6 +25,8 @@ export function planBase(
     lineWidth?: number;
     shadow?: { dx: number; dy: number; color: string };
     paths?: boolean;
+    /** Leave buildings out (a camera projection draws them instead). */
+    noBuildings?: boolean;
   } = {},
 ): void {
   bg(ctx, pal.urban);
@@ -46,7 +48,7 @@ export function planBase(
     if (r.ground === Ground.RAIL) return { fill: { color: css(pick(pal, "rail")), k: 0.35 } };
     return null;
   });
-  buildings(sc, ctx, {
+  if (!opts.noBuildings) buildings(sc, ctx, {
     fill: (b) => css(opts.buildingFill ? opts.buildingFill(b) : pick(pal, b.kind !== "building" ? "named" : "building")),
     stroke: opts.buildingStroke === null ? undefined : () => css(opts.buildingStroke ?? mul(pick(pal, "building"), 0.7)),
     lineWidth: opts.lineWidth ?? Math.max(0.6, Math.min(2, sc.scale * 0.12)),

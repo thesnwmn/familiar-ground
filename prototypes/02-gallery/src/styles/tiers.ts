@@ -1,3 +1,5 @@
+import { WALL_TIERS } from "./walls.ts";
+
 /**
  * How suitable each style is as the main view of a top-down game about exploring, gathering,
  * fighting gangs and going into buildings. See docs/07-styles-for-play.md for the reasoning.
@@ -9,6 +11,11 @@ export type Tier = "A" | "B" | "C" | "D";
 
 export const TIERS: Record<string, [Tier, string]> = {
   // Playable candidates
+  "play-ligne-oblique": ["A", "Smooth comic lines with walls and cover"],
+  "play-lit-persp": ["A", "Lumen mood, real shapes, walls round you"],
+  "play-tactical-oblique": ["A", "Clearest fight view with walls"],
+  "play-clean-persp": ["A", "Calm, readable perspective"],
+  "play-follow-street": ["A", "Oblique that turns with the street: new walls round every corner"],
   "play-oblique": ["A", "Stable camera, walls visible, actors read clearly"],
   "play-oblique-pixel": ["A", "Oblique with pixel charm and correct shapes"],
   "play-perspective": ["A", "Best sense of place; tune the lean to avoid swim"],
@@ -95,4 +102,4 @@ export const TIERS: Record<string, [Tier, string]> = {
   "game-lowpoly": ["B", "True 3D with real shapes; camera can rotate"],
 };
 
-export const tierOf = (id: string): [Tier, string] => TIERS[id] ?? ["C", ""];
+export const tierOf = (id: string): [Tier, string] => TIERS[id] ?? WALL_TIERS[id] ?? ["C", ""];

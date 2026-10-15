@@ -67,7 +67,7 @@ export const EXISTING_STYLES: StillStyle[] = GAME_STYLES.map((info) => ({
     levels.forEach((px, i) => {
       if (Math.abs(Math.log(px / sc.scale)) < Math.abs(Math.log(levels[zoomLevel]! / sc.scale))) zoomLevel = i;
     });
-    const view: View = { world: sc.world, player: { x: Math.floor(sc.cx), y: Math.floor(sc.cy), fx: 0, fy: 1 }, zoomLevel, seed: sc.seed };
+    const view: View = { world: sc.world, player: { x: Math.floor(sc.cx), y: Math.floor(sc.cy), fx: 0, fy: 1 }, zoomLevel, seed: sc.seed, angle: 0 };
     // Let renderers that build caches over several frames finish (3D meshes, Lumen bakes).
     for (let i = 0; i < 40; i++) {
       (r as unknown as { last?: number }).last = 0; // Lumen throttles by time; a still doesn't care

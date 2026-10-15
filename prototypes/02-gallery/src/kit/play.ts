@@ -289,57 +289,82 @@ export function drawHud(sc: Scene, ctx: Ctx, actors: Actor[], tone: "dark" | "li
 export function oblique(
   sc: Scene,
   ctx: Ctx,
-  opts: { roof: (b: SceneBuilding) => string; wall: (b: SceneBuilding, shade: number) => string; outline?: string; k?: number; windows?: string; skip?: (b: SceneBuilding) => boolean },
+  opts: {
+    roof: (b: SceneBuilding) => string | CanvasPattern;
+    wall: (b: SceneBuilding, shade: number) => string;
+    outline?: string;
+    lineWidth?: number;
+    k?: number;
+    windows?: string;
+    skip?: (b: SceneBuilding) => boolean;
+    /** Sideways push per unit of height (0 = straight up; 0.5 = cavalier / Ultima-style slant). */
+    lean?: number;
+  },
 ): void {
+  const lean = opts.lean ?? 0;
+  const lw = opts.lineWidth ?? 1;
   const items = sc.buildings
     .filter((b) => !opts.skip?.(b))
     .map((b) => {
       let maxY = -Infinity;
-      for (const p of b.rings[0]!) maxY = Math.max(maxY, p.y);
-      return { b, maxY, h: Math.min(18, b.levels) * 1.6 * (opts.k ?? 0.7) * sc.scale };
+      let minX = Infinity;
+      for (const p of b.rings[0]!) (maxY = Math.max(maxY, p.y), (minX = Math.min(minX, p.x)));
+      return { b, key: maxY - (lean > 0 ? minX * lean * 0.5 : 0), h: Math.min(18, b.levels) * 1.6 * (opts.k ?? 0.7) * sc.scale };
     });
-  items.sort((a, b) => a.maxY - b.maxY);
+  items.sort((a, b) => a.key - b.key);
   ctx.save();
   ctx.lineJoin = "round";
   for (const { b, h } of items) {
     const ring = b.rings[0]!;
-    // South-facing walls: edges whose outward normal points down the screen.
+    const dx = lean * h;
+    // Only walls facing the viewer (outward normal pointing down the screen, against the push).
+    let area = 0;
+    for (let i = 0; i + 1 < ring.length; i++) area += ring[i]!.x * ring[i + 1]!.y - ring[i + 1]!.x * ring[i]!.y;
+    const walls: { ax: number; ay: number; cx: number; cy: number; len: number; shade: number }[] = [];
     for (let i = 0; i + 1 < ring.length; i++) {
       const a = ring[i]!;
       const c = ring[i + 1]!;
+      const ex = c.x - a.x;
+      const ey = c.y - a.y;
+      const nx = area > 0 ? ey : -ey;
+      const ny = area > 0 ? -ex : ex;
+      if (nx * -lean + ny <= 0) continue;
       const ax = sc.sx(a.x);
       const ay = sc.sy(a.y);
       const cx = sc.sx(c.x);
       const cy = sc.sy(c.y);
+      const len = Math.hypot(cx - ax, cy - ay) || 1;
+      walls.push({ ax, ay, cx, cy, len, shade: 0.55 + 0.45 * Math.abs((cx - ax) / len) * (lean ? (nx > 0 ? 0.7 : 1) : 1) });
+    }
+    walls.sort((p, q) => Math.max(p.ay, p.cy) - Math.max(q.ay, q.cy));
+    for (const { ax, ay, cx, cy, len, shade } of walls) {
       ctx.beginPath();
       ctx.moveTo(ax, ay);
       ctx.lineTo(cx, cy);
-      ctx.lineTo(cx, cy - h);
-      ctx.lineTo(ax, ay - h);
+      ctx.lineTo(cx + dx, cy - h);
+      ctx.lineTo(ax + dx, ay - h);
       ctx.closePath();
-      const len = Math.hypot(cx - ax, cy - ay) || 1;
-      const shade = 0.55 + 0.45 * Math.abs((cx - ax) / len);
       ctx.fillStyle = opts.wall(b, shade);
       ctx.fill();
       if (opts.outline) {
         ctx.strokeStyle = opts.outline;
-        ctx.lineWidth = 0.8;
+        ctx.lineWidth = 0.8 * lw;
         ctx.stroke();
       }
       if (opts.windows && h > 8 && len > 6) {
         ctx.fillStyle = opts.windows;
         for (let fy = 4; fy < h - 3; fy += 6)
-          for (let t = 4; t < len - 3; t += 6) ctx.fillRect(ax + ((cx - ax) * t) / len - 1, ay + ((cy - ay) * t) / len - fy - 1, 2, 2);
+          for (let t = 4; t < len - 3; t += 6) ctx.fillRect(ax + ((cx - ax) * t) / len + (dx * fy) / h - 1, ay + ((cy - ay) * t) / len - fy - 1, 2, 2);
       }
     }
     ctx.save();
-    ctx.translate(0, -h);
+    ctx.translate(dx, -h);
     buildingPath(sc, ctx, b);
     ctx.fillStyle = opts.roof(b);
     ctx.fill("evenodd");
     if (opts.outline) {
       ctx.strokeStyle = opts.outline;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = lw;
       ctx.stroke();
     }
     ctx.restore();
@@ -347,7 +372,6 @@ export function oblique(
   ctx.restore();
 }
 
-/** The building the player is entering: the largest one near the centre. */
 export function enteredBuilding(sc: Scene): SceneBuilding | undefined {
   let best: SceneBuilding | undefined;
   let score = -Infinity;
@@ -451,4 +475,22 @@ export function cutawayInterior(sc: Scene, ctx: Ctx, b: SceneBuilding, opts: { f
 
 export function insidePoint(b: SceneBuilding): Point {
   return { x: b.cx, y: b.cy };
+}
+
+/** Actors placed in world space, moved into a rotated scene's frame. */
+export function rotateActors(rs: Scene, actors: Actor[]): Actor[] {
+  if (!rs.rotation) return actors;
+  return actors.map((a) => ({ ...a, ...rs.rot(a.x, a.y), facing: a.facing + rs.rotation }));
+}
+
+/** Screen points turned about the screen centre (for overlays computed before rotating). */
+export function rotateScreen(sc: Scene, pts: { x: number; y: number }[], theta: number): { x: number; y: number }[] {
+  if (!theta) return pts;
+  const c = Math.cos(theta);
+  const s = Math.sin(theta);
+  return pts.map((p) => {
+    const dx = p.x - sc.W / 2;
+    const dy = p.y - sc.H / 2;
+    return { x: sc.W / 2 + dx * c - dy * s, y: sc.H / 2 + dx * s + dy * c };
+  });
 }

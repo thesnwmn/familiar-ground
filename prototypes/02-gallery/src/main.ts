@@ -20,6 +20,7 @@ const spots: Place[] = (params.get("spots") ?? "")
   })
   .filter((p): p is Place => !!p);
 let PLACES: Place[] = [...spots, ...BUILT_IN];
+const ANGLES = ["0", "30", "45", "90", "180", "auto"];
 
 const state = {
   places: (params.get("places")?.split(",") ?? (spots.length ? spots.map((s) => s.id) : DEFAULT_PLACES)).filter((id) => PLACES.some((p) => p.id === id)),
@@ -28,7 +29,13 @@ const state = {
   tiers: params.get("tiers")?.split(",") ?? ["A", "B", "C", "D"],
   size: (params.get("size") as SizeKey) in SIZES ? (params.get("size") as SizeKey) : ("m" as SizeKey),
   seed: Number(params.get("seed") ?? 7) || 7,
+  /** Camera angle for rotatable styles: degrees clockwise, or "auto" (follow the nearest street). */
+  angle: ANGLES.includes(params.get("angle") ?? "") ? params.get("angle")! : "0",
 };
+function viewAngle(style: StillStyle): number | "auto" {
+  if (!style.rotatable || state.angle === "0") return 0;
+  return state.angle === "auto" ? "auto" : (Number(state.angle) * Math.PI) / 180;
+}
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const playUrl = import.meta.env.DEV ? "http://localhost:5174/" : "../01-play/";
@@ -70,7 +77,7 @@ let running = false;
 let done = 0;
 
 function render(style: StillStyle, place: Place, zoom: Zoom, w: number, h: number, priority = false): Promise<{ url: string; ms: number } | { error: string }> {
-  const key = `${style.id}|${place.id}|${zoom.id}|${w}x${h}|${state.seed}`;
+  const key = `${style.id}|${place.id}|${zoom.id}|${w}x${h}|${state.seed}|${style.rotatable ? state.angle : 0}`;
   let p = cache.get(key);
   if (!p) {
     p = new Promise((resolve) => {
@@ -95,6 +102,7 @@ async function pump(): Promise<void> {
       const c = center(job.place);
       const t0 = performance.now();
       const sc = new Scene(world, state.seed, c.x, c.y, job.zoom.scale, job.w, job.h);
+      sc.view = { angle: viewAngle(job.style) };
       const canvas = document.createElement("canvas");
       canvas.width = job.w;
       canvas.height = job.h;
@@ -142,6 +150,8 @@ function syncUrl(): void {
   q.set("zooms", state.zooms.join(","));
   q.set("size", state.size);
   q.set("seed", String(state.seed));
+  if (state.angle !== "0") q.set("angle", state.angle);
+  else q.delete("angle");
   if (state.groups.length !== GROUPS.length) q.set("groups", state.groups.join(","));
   else q.delete("groups");
   if (state.tiers.length !== 4) q.set("tiers", state.tiers.join(","));
@@ -213,6 +223,12 @@ sizeSel.addEventListener("change", () => {
   state.size = sizeSel.value as SizeKey;
   build();
 });
+const angleSel = $<HTMLSelectElement>("angle");
+angleSel.value = state.angle;
+angleSel.addEventListener("change", () => {
+  state.angle = angleSel.value;
+  build();
+});
 const seedIn = $<HTMLInputElement>("seed");
 seedIn.value = String(state.seed);
 seedIn.addEventListener("change", () => {
@@ -262,7 +278,7 @@ function build(): void {
       const head = document.createElement("div");
       head.className = "head";
       head.innerHTML = `<h3></h3>`;
-      head.querySelector("h3")!.textContent = style.name;
+      head.querySelector("h3")!.textContent = style.rotatable ? `${style.name} ↻` : style.name;
       const [tier, why] = tierOf(style.id);
       const badge = document.createElement("span");
       badge.className = `tier tier-${tier}`;
@@ -277,7 +293,7 @@ function build(): void {
       const p = places[0] ?? PLACES[0]!;
       const a = document.createElement("a");
       a.className = "play";
-      a.href = `${playUrl}?lat=${p.lat}&lng=${p.lng}&seed=${state.seed}&style=${style.playable ?? `lab:${style.id}`}${tilesUrl ? `&tiles=${encodeURIComponent(tilesUrl)}` : ""}`;
+      a.href = `${playUrl}?lat=${p.lat}&lng=${p.lng}&seed=${state.seed}&style=${style.playable ?? `lab:${style.id}`}${style.rotatable && state.angle !== "0" ? `&angle=${state.angle}` : ""}${tilesUrl ? `&tiles=${encodeURIComponent(tilesUrl)}` : ""}`;
       a.textContent = `Play at ${p.name} →`;
       head.append(a);
       const blurb = document.createElement("p");

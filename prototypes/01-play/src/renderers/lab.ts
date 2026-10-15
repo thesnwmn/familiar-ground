@@ -29,8 +29,16 @@ export class LabRenderer implements Renderer {
   private busy = false;
   private cost = 0;
   private lastEnd = 0;
+  private last: SceneType | undefined;
+  readonly rotatable: boolean;
 
-  constructor(private readonly style: StillStyle) {}
+  constructor(private readonly style: StillStyle) {
+    this.rotatable = !!style.rotatable;
+  }
+
+  streetAngle(): number | null {
+    return this.last ? this.last.streetAngle() : null;
+  }
 
   mount(container: HTMLElement): void {
     this.canvas = createFillCanvas(container, false);
@@ -53,6 +61,8 @@ export class LabRenderer implements Renderer {
     if (this.busy || performance.now() - this.lastEnd < this.cost * 0.5) return true;
     const t0 = performance.now();
     const sc = new Scene(view.world, view.seed, view.player.x + 0.5, view.player.y + 0.5, LEVELS[view.zoomLevel]!.scale, this.width, this.height);
+    sc.view = { angle: this.rotatable ? view.angle : 0 };
+    this.last = sc;
     this.frame.width = this.width;
     this.frame.height = this.height;
     const fctx = this.frame.getContext("2d", { willReadFrequently: true })!;

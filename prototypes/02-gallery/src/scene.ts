@@ -43,6 +43,10 @@ export class Scene {
   readonly buildings: SceneBuilding[] = [];
   readonly roads: SceneRoad[] = [];
   readonly pois: ScenePoi[] = [];
+  /** Camera settings a style may honour (set by the gallery controls or the game). */
+  view: { angle: number | "auto" } = { angle: 0 };
+  /** Rotation (radians, clockwise on screen) already applied to this scene's vector data. */
+  rotation = 0;
   private lastChunk: Chunk | undefined;
   private lastCx = NaN;
   private lastCy = NaN;
@@ -65,6 +69,63 @@ export class Scene {
     this.gx1 = Math.ceil(cx + halfW) + 1;
     this.gy1 = Math.ceil(cy + halfH) + 1;
     this.collect();
+  }
+
+  /** Rotates a point about the scene centre by `theta` (clockwise on screen). */
+  rot(x: number, y: number, theta = this.rotation): { x: number; y: number } {
+    const c = Math.cos(theta);
+    const s = Math.sin(theta);
+    const dx = x - this.cx;
+    const dy = y - this.cy;
+    return { x: this.cx + dx * c - dy * s, y: this.cy + dx * s + dy * c };
+  }
+
+  /**
+   * A copy whose vector data (buildings, roads, places) is rotated about the centre, sized for a
+   * W×H screen. Cell lookups (at/ground/structure) stay in world orientation.
+   */
+  rotated(theta: number, W = this.W, H = this.H): Scene {
+    const r = Object.create(Scene.prototype) as Scene;
+    Object.assign(r, this, { W, H, rotation: theta });
+    const p = (q: { x: number; y: number }) => this.rot(q.x, q.y, theta);
+    Object.assign(r, {
+      buildings: this.buildings.map((b) => {
+        const c = p({ x: b.cx, y: b.cy });
+        return { ...b, rings: b.rings.map((ring) => ring.map(p)), cx: c.x, cy: c.y };
+      }),
+      roads: this.roads.map((rd) => ({ ...rd, points: rd.points.map(p) })),
+      pois: this.pois.map((poi) => ({ ...poi, ...p(poi) })),
+    });
+    return r;
+  }
+
+  /** Angle that makes the nearest street run straight up the screen (the smaller of the two turns). */
+  streetAngle(): number {
+    let best = Infinity;
+    let angle = 0;
+    for (const r of this.roads) {
+      if (r.ground !== Ground.ROAD_MAJOR && r.ground !== Ground.ROAD_MINOR) continue;
+      for (let i = 0; i + 1 < r.points.length; i++) {
+        const a = r.points[i]!;
+        const b = r.points[i + 1]!;
+        const ex = b.x - a.x;
+        const ey = b.y - a.y;
+        const len2 = ex * ex + ey * ey;
+        if (!len2) continue;
+        const t = Math.max(0, Math.min(1, ((this.cx - a.x) * ex + (this.cy - a.y) * ey) / len2));
+        const d = Math.hypot(a.x + ex * t - this.cx, a.y + ey * t - this.cy) - r.width / 2;
+        if (d < best) {
+          best = d;
+          angle = Math.atan2(ey, ex);
+        }
+      }
+    }
+    if (best > 25) return 0;
+    let theta = -Math.PI / 2 - angle;
+    // Either way along the street works; pick the smaller turn.
+    while (theta > Math.PI / 2) theta -= Math.PI;
+    while (theta < -Math.PI / 2) theta += Math.PI;
+    return theta;
   }
 
   get cols(): number {
