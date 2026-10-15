@@ -1,3 +1,4 @@
+export * from "./biome.ts";
 export * from "./chunk.ts";
 export * from "./classify.ts";
 export * from "./delta.ts";

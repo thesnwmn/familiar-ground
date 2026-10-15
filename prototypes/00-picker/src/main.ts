@@ -8,6 +8,8 @@ const STYLES = [
   { id: "ascii", label: "ASCII", hint: "Roguelike glyphs" },
   { id: "pixel", label: "Pixel art", hint: "3/4 top-down tiles" },
   { id: "iso", label: "Isometric", hint: "SimCity-style blocks" },
+  { id: "lumen", label: "Lumen", hint: "Lit pixels: lamps, windows, lantern" },
+  { id: "lumen-biomes", label: "Lumen + biomes", hint: "Lit pixels with fantasy biome zones" },
   { id: "sketch", label: "Sketch", hint: "Hand-drawn ink map" },
   { id: "voxel", label: "Voxel 3D", hint: "Blocky 3D" },
   { id: "lowpoly", label: "Low-poly 3D", hint: "Pastel diorama" },

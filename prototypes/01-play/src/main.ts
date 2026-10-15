@@ -45,7 +45,7 @@ const world = new World(
 
 const t = lngLatToTile(start, CHUNK_ZOOM);
 const player = { x: Math.floor(t.x * CHUNK_CELLS), y: Math.floor(t.y * CHUNK_CELLS), fx: 0, fy: -1 };
-const view: View = { world, player, zoomLevel: 0 };
+const view: View = { world, player, zoomLevel: 0, seed };
 
 function cellAt(gx: number, gy: number) {
   const c = world.cell(gx, gy);

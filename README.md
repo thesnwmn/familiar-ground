@@ -34,20 +34,22 @@ pnpm build:site      # builds every prototype into _site/
 
 **00-picker**: a MapLibre map (OpenFreeMap style). Click to pick a spot, choose a style and a seed, then play. The search box uses Nominatim (one request per search).
 
-**01-play**: the real world, streamed from OpenStreetMap vector tiles and built into chunks in a Web Worker, drawn in your choice of style. You can switch style while playing (the dropdown or keys `1`–`6`); the world and your changes carry over.
+**01-play**: the real world, streamed from OpenStreetMap vector tiles and built into chunks in a Web Worker, drawn in your choice of style. You can switch style while playing (the dropdown or keys `1`–`8`); the world and your changes carry over.
 
 | Style | Group | How it draws |
 |---|---|---|
 | `ascii` | 2D grid | rot.js glyphs, one cell per character (several when zoomed out) |
 | `pixel` | 2D grid | Procedural 8×8 pixel tiles in a 3/4 view: roofs plus south walls as tall as the building's floors; cached minimap when zoomed far out |
 | `iso` | 2D grid | Isometric diamonds drawn back to front; buildings are columns with floor lines |
+| `lumen` | 2D lit pixels | Fine pixels (4×4 per cell) under a smooth light map: streetlamps, lit windows, neon shop signs and your lantern; kerbs, pavements, centre lines, motorway lanes and zebra crossings where mapped footpaths cross roads; swaying trees, glinting water, fireflies and chimney smoke. Evening by default; `?time=night\|dusk\|day\|auto` (auto follows the sun at your longitude) |
+| `lumen-biomes` | 2D lit pixels | Lumen plus fantasy biome zones from the seed (temperate, overgrown, fungal, autumn, frost) that restyle ground, trees, lights and particles without moving any real road or building |
 | `sketch` | 2D vector | Ink outlines traced with marching squares, hatching, watercolour washes, tree scribbles and handwritten labels |
 | `voxel` | 3D (Three.js) | Voxel columns with visible storeys, cube trees, crisp pixel ground |
 | `lowpoly` | 3D (Three.js) | Buildings extruded from their real footprints, flat-shaded pastels, cone trees |
 
 - URL parameters: `lat`, `lng`, `seed`, `style`, and optional `tiles` (a TileJSON or `.pmtiles` URL; defaults to OpenFreeMap).
 - Touch: drag anywhere on the map to walk (a joystick appears under your finger; the further you push, the faster you go, slower when zoomed out; diagonals slide along walls), pinch to zoom, and use the on-screen buttons.
-- Keys: arrows/WASD to move (Shift runs), `X` breaks the building, wall or tree you're facing, `B` builds a wall, `+`/`-` or the mouse wheel zoom, `Z` cycles zoom, `1`–`6` switch style.
+- Keys: arrows/WASD to move (Shift runs), `X` breaks the building, wall or tree you're facing, `B` builds a wall, `+`/`-` or the mouse wheel zoom, `Z` cycles zoom, `1`–`8` switch style.
 - Changes are saved per chunk in IndexedDB and survive reloads. The world itself is regenerated from map data + seed.
 - Named buildings (a POI inside the footprint) stand out in every style, and the HUD shows what you're standing on and facing.
 
