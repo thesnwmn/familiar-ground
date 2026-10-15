@@ -37,7 +37,7 @@ pnpm build:site      # builds every prototype into _site/
 **01-ascii**: the real world as a roguelike map, streamed from OpenStreetMap vector tiles and built into chunks in a Web Worker.
 
 - URL parameters: `lat`, `lng`, `seed`, and optional `tiles` (a TileJSON or `.pmtiles` URL; defaults to OpenFreeMap).
-- Touch: drag anywhere on the map to walk (a joystick appears under your finger; drag further to run, diagonals slide along walls), pinch to zoom, and use the on-screen Break / Build wall / ＋ / − buttons.
+- Touch: drag anywhere on the map to walk (a joystick appears under your finger; the further you push, the faster you go (slower when zoomed out), diagonals slide along walls), pinch to zoom, and use the on-screen Break / Build wall / ＋ / − buttons.
 - Keys: arrows/WASD to move (Shift runs), `X` breaks the building, wall or tree you're facing, `B` builds a wall, `+`/`-` or the mouse wheel zoom, `Z` cycles zoom.
 - Zoom has five levels: three glyph sizes, then 2 and 4 map cells per character for an overview.
 - Changes are saved per chunk in IndexedDB and survive reloads. The world itself is regenerated from map data + seed.

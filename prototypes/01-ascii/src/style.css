@@ -50,9 +50,9 @@ a {
 }
 #stick {
   position: fixed;
-  width: 120px;
-  height: 120px;
-  margin: -60px 0 0 -60px;
+  width: 200px;
+  height: 200px;
+  margin: -100px 0 0 -100px;
   border: 2px solid #ffffff40;
   border-radius: 50%;
   background: #ffffff10;
@@ -65,8 +65,8 @@ a {
   display: none;
 }
 #knob {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: #ffffff55;
 }

@@ -43,13 +43,16 @@ const player = { x: Math.floor(t.x * CHUNK_CELLS), y: Math.floor(t.y * CHUNK_CEL
 const display = new Display({ fontSize: 16, fontFamily: "ui-monospace, Menlo, Consolas, monospace", bg: "#000" });
 const screen = document.getElementById("screen")!;
 screen.append(display.getContainer()!);
-/** Zoom levels: larger glyphs when zoomed in, then several map cells per character when zoomed out. */
+/**
+ * Zoom levels: larger glyphs when zoomed in, then several map cells per character when zoomed out.
+ * `speed` scales joystick movement, so zoomed-out views don't race across the map.
+ */
 const ZOOM_LEVELS = [
-  { fontSize: 32, step: 1 },
-  { fontSize: 24, step: 1 },
-  { fontSize: 16, step: 1 },
-  { fontSize: 16, step: 2 },
-  { fontSize: 16, step: 4 },
+  { fontSize: 32, step: 1, speed: 1 },
+  { fontSize: 24, step: 1, speed: 1 },
+  { fontSize: 16, step: 1, speed: 0.85 },
+  { fontSize: 16, step: 2, speed: 0.7 },
+  { fontSize: 16, step: 4, speed: 0.55 },
 ];
 let zoomLevel = 2;
 /** Map cells per character at the current zoom level. */
@@ -71,8 +74,10 @@ function cellAt(gx: number, gy: number) {
 
 function render(): void {
   const { width, height } = display.getOptions();
-  const left = player.x - Math.floor(width / 2) * zoom;
-  const top = player.y - Math.floor(height / 2) * zoom;
+  // Snap the camera to whole characters when zoomed out, so the map scrolls a character at a
+  // time instead of shimmering as the sampled cells shift under it.
+  const left = Math.floor(player.x / zoom) * zoom - Math.floor(width / 2) * zoom;
+  const top = Math.floor(player.y / zoom) * zoom - Math.floor(height / 2) * zoom;
   for (let sy = 0; sy < height; sy++) {
     for (let sx = 0; sx < width; sx++) {
       const gx = left + sx * zoom;
@@ -259,10 +264,14 @@ screen.addEventListener(
 const stick = document.getElementById("stick")!;
 const knob = document.getElementById("knob")!;
 const pointers = new Map<number, { x: number; y: number }>();
-const STICK_DEADZONE = 14;
-const STICK_RUN = 80;
-const STICK_MAX = 60;
-let joystick: { id: number; x0: number; y0: number; x: number; y: number } | null = null;
+const STICK_DEADZONE = 16;
+/** How far the knob travels; full deflection is full speed. */
+const STICK_MAX = 100;
+/** Cells per second at the edge of the dead zone and at full deflection (before zoom scaling). */
+const WALK_SPEED = 5;
+const RUN_SPEED = 22;
+const TICK_MS = 40;
+let joystick: { id: number; x0: number; y0: number; x: number; y: number; travel: number } | null = null;
 let joystickTimer: number | undefined;
 let pinch: { startDist: number; startLevel: number } | null = null;
 
@@ -271,16 +280,26 @@ const pinchDistance = () => {
   return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
 };
 
+/** Analog joystick: speed grows with how far the knob is pushed; whole cells are taken as they accrue. */
 function joystickTick(): void {
   if (!joystick) return;
   const dx = joystick.x - joystick.x0;
   const dy = joystick.y - joystick.y0;
   const dist = Math.hypot(dx, dy);
-  if (dist < STICK_DEADZONE) return;
+  if (dist < STICK_DEADZONE) {
+    joystick.travel = 0;
+    return;
+  }
+  const t = Math.min(1, (dist - STICK_DEADZONE) / (STICK_MAX - STICK_DEADZONE));
+  const speed = (WALK_SPEED + (RUN_SPEED - WALK_SPEED) * t * t) * ZOOM_LEVELS[zoomLevel]!.speed;
+  joystick.travel += (speed * TICK_MS) / 1000;
+  const steps = Math.floor(joystick.travel);
+  if (steps === 0) return;
+  joystick.travel -= steps;
   // 8 directions: include an axis when it carries a good share of the drag.
   const mx = Math.abs(dx) > dist * 0.38 ? Math.sign(dx) : 0;
   const my = Math.abs(dy) > dist * 0.38 ? Math.sign(dy) : 0;
-  move(mx, my, dist > STICK_RUN ? 3 : 1);
+  move(mx, my, steps);
 }
 
 function showStick(): void {
@@ -309,8 +328,8 @@ screen.addEventListener("pointerdown", (e) => {
   screen.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 1) {
-    joystick = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY };
-    joystickTimer = window.setInterval(joystickTick, 110);
+    joystick = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, travel: 0 };
+    joystickTimer = window.setInterval(joystickTick, TICK_MS);
     showStick();
   } else if (pointers.size === 2) {
     endJoystick();
@@ -331,7 +350,10 @@ screen.addEventListener("pointermove", (e) => {
     const first = Math.hypot(joystick.x - joystick.x0, joystick.y - joystick.y0) < STICK_DEADZONE;
     joystick.x = e.clientX;
     joystick.y = e.clientY;
-    if (first) joystickTick(); // respond immediately when the drag starts, not on the next tick
+    if (first && Math.hypot(joystick.x - joystick.x0, joystick.y - joystick.y0) >= STICK_DEADZONE) {
+      joystick.travel = 1; // take the first step as soon as the drag starts, not on the next tick
+      joystickTick();
+    }
     showStick();
   }
 });
