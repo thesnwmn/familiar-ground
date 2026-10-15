@@ -32,9 +32,19 @@ pnpm build:site      # builds every prototype into _site/
 
 ## Hosting
 
-Every push to `main` builds all prototypes into one static site and deploys it to GitHub Pages (`.github/workflows/pages.yml`). One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+Prototypes are published to GitHub Pages from the `gh-pages` branch:
 
-Prototypes use relative paths, so they work under `https://<user>.github.io/familiar-ground/`.
+| Event | Workflow | Published to |
+|---|---|---|
+| Push to `main` | `deploy-pages.yml` | `https://<user>.github.io/familiar-ground/` (keeps `preview/pr-*/`) |
+| PR opened/updated | `pr-preview.yml` | `…/familiar-ground/preview/pr-<number>/`, linked in a PR comment |
+| PR closed/merged | `pr-cleanup.yml` | removes `preview/pr-<number>/` |
+
+All three share a concurrency group, so their pushes to `gh-pages` queue instead of racing.
+
+One-time setup, after the first workflow run has created `gh-pages`: **Settings → Pages → Build and deployment → Source: Deploy from a branch → `gh-pages` / `(root)`**.
+
+Prototypes use relative paths, so they work at the root and inside preview folders.
 
 ## Data and attribution
 
