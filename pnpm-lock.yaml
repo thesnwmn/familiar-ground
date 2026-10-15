@@ -63,6 +63,16 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4
 
+  prototypes/02-gallery:
+    dependencies:
+      '@familiar-ground/world-core':
+        specifier: workspace:*
+        version: link:../../packages/world-core
+    devDependencies:
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4
+
 packages:
 
   '@dimforge/rapier3d-compat@0.12.0':

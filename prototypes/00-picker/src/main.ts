@@ -24,6 +24,7 @@ let style = (() => {
 })();
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+if (import.meta.env.DEV) $<HTMLAnchorElement>("lab").href = "http://localhost:5175/";
 const seedInput = $<HTMLInputElement>("seed");
 const picked = $<HTMLParagraphElement>("picked");
 const play = $<HTMLDivElement>("play");
