@@ -62,6 +62,20 @@ export function spotPlace(lat: number, lng: number, name?: string): Place {
   };
 }
 
+/** Dense, interesting city centres for "surprise me" (a random point near one of these). */
+export const RANDOM_CITIES: [string, number, number][] = [
+  ["Tokyo", 35.6895, 139.6917], ["Seoul", 37.5665, 126.978], ["Hong Kong", 22.2819, 114.1583], ["Singapore", 1.2847, 103.851],
+  ["Bangkok", 13.7466, 100.5393], ["Mumbai", 18.9388, 72.8354], ["Istanbul", 41.0082, 28.9784], ["Cairo", 30.0444, 31.2357],
+  ["Lagos", 6.4541, 3.3947], ["Nairobi", -1.2864, 36.8172], ["Cape Town", -33.9249, 18.4241], ["Rome", 41.8986, 12.4769],
+  ["Berlin", 52.5208, 13.4094], ["Prague", 50.0875, 14.4213], ["Vienna", 48.2082, 16.3738], ["Lisbon", 38.7107, -9.1365],
+  ["Madrid", 40.4168, -3.7038], ["Edinburgh", 55.9496, -3.1905], ["Dublin", 53.3438, -6.2546], ["Copenhagen", 55.6786, 12.5635],
+  ["Stockholm", 59.3251, 18.0711], ["Helsinki", 60.1699, 24.9384], ["Moscow", 55.7539, 37.6208], ["Athens", 37.9755, 23.7348],
+  ["New York", 40.7128, -74.006], ["San Francisco", 37.7879, -122.4075], ["Los Angeles", 34.0522, -118.2437], ["Toronto", 43.6511, -79.3832],
+  ["Mexico City", 19.4326, -99.1332], ["Havana", 23.1365, -82.3586], ["Rio de Janeiro", -22.9068, -43.1729], ["Buenos Aires", -34.6037, -58.3816],
+  ["Sydney", -33.8688, 151.2093], ["Melbourne", -37.8136, 144.9631], ["Kyoto", 35.0037, 135.7788], ["Hanoi", 21.0285, 105.8542],
+  ["Jerusalem", 31.7767, 35.2345], ["Fez", 34.0644, -4.9737], ["Glasgow", 55.8609, -4.2514], ["Naples", 40.8518, 14.2681],
+];
+
 export const DEFAULT_PLACES = ["manhattan", "barcelona", "soho", "etoile"];
 
 export interface Zoom {
@@ -73,6 +87,7 @@ export interface Zoom {
 
 export const ZOOMS: Zoom[] = [
   { id: "close", name: "Close", scale: 12 },
+  { id: "game", name: "Game", scale: 7 },
   { id: "mid", name: "Street", scale: 4 },
   { id: "far", name: "District", scale: 1.25 },
 ];

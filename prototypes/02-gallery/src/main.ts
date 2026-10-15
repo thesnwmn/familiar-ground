@@ -1,6 +1,7 @@
 import { CHUNK_CELLS, CHUNK_ZOOM, MemoryDeltaStore, World, lngLatToTile } from "@familiar-ground/world-core";
 import { createWorkerProvider } from "../../01-play/src/workerProvider.ts";
-import { DEFAULT_PLACES, PLACES as BUILT_IN, ZOOMS, parseSpot, spotPlace, type Place, type Zoom } from "./places.ts";
+import { DEFAULT_PLACES, PLACES as BUILT_IN, RANDOM_CITIES, ZOOMS, parseSpot, spotPlace, type Place, type Zoom } from "./places.ts";
+import { tierOf, type Tier } from "./styles/tiers.ts";
 import { Scene } from "./scene.ts";
 import { ALL_STYLES, GROUPS } from "./styles/index.ts";
 import type { StillStyle } from "./styles/types.ts";
@@ -24,6 +25,7 @@ const state = {
   places: (params.get("places")?.split(",") ?? (spots.length ? spots.map((s) => s.id) : DEFAULT_PLACES)).filter((id) => PLACES.some((p) => p.id === id)),
   zooms: params.get("zooms")?.split(",") ?? ZOOMS.map((z) => z.id),
   groups: params.get("groups")?.split(",") ?? GROUPS,
+  tiers: params.get("tiers")?.split(",") ?? ["A", "B", "C", "D"],
   size: (params.get("size") as SizeKey) in SIZES ? (params.get("size") as SizeKey) : ("m" as SizeKey),
   seed: Number(params.get("seed") ?? 7) || 7,
 };
@@ -142,6 +144,8 @@ function syncUrl(): void {
   q.set("seed", String(state.seed));
   if (state.groups.length !== GROUPS.length) q.set("groups", state.groups.join(","));
   else q.delete("groups");
+  if (state.tiers.length !== 4) q.set("tiers", state.tiers.join(","));
+  else q.delete("tiers");
   history.replaceState(null, "", `?${q}`);
 }
 
@@ -187,6 +191,22 @@ $("locate").addEventListener("click", () => {
 });
 chips($("zooms"), ZOOMS.map((z) => ({ id: z.id, label: z.name })), state.zooms, () => build());
 chips($("groups"), GROUPS.map((g) => ({ id: g, label: g })), state.groups, () => build());
+chips($("tiers"), [
+  { id: "A", label: "A", note: "build on it" },
+  { id: "B", label: "B", note: "alternative / theme" },
+  { id: "C", label: "C", note: "map / gadget / UI" },
+  { id: "D", label: "D", note: "art toy" },
+], state.tiers, () => build());
+
+$("surprise").addEventListener("click", () => {
+  // Three random spots near real city centres (random points on Earth are mostly sea).
+  let n = Date.now();
+  const rnd = () => ((n = (n * 16807) % 2147483647) / 2147483647);
+  for (let k = 0; k < 3; k++) {
+    const [name, lat, lng] = RANDOM_CITIES[Math.floor(rnd() * RANDOM_CITIES.length)]!;
+    addSpot(lat + (rnd() - 0.5) * 0.02, lng + (rnd() - 0.5) * 0.02, `🎲 ${name}`);
+  }
+});
 const sizeSel = $<HTMLSelectElement>("size");
 sizeSel.value = state.size;
 sizeSel.addEventListener("change", () => {
@@ -229,21 +249,37 @@ function build(): void {
     h2.className = "group";
     h2.textContent = group;
     main.append(h2);
-    for (const style of ALL_STYLES.filter((s) => s.group === group)) {
+    const order: Record<Tier, number> = { A: 0, B: 1, C: 2, D: 3 };
+    const inGroup = ALL_STYLES.filter((s) => s.group === group && state.tiers.includes(tierOf(s.id)[0]));
+    inGroup.sort((a, b) => order[tierOf(a.id)[0]] - order[tierOf(b.id)[0]]);
+    if (!inGroup.length) {
+      h2.remove();
+      continue;
+    }
+    for (const style of inGroup) {
       const sec = document.createElement("section");
       sec.className = "style";
       const head = document.createElement("div");
       head.className = "head";
       head.innerHTML = `<h3></h3>`;
       head.querySelector("h3")!.textContent = style.name;
-      if (style.playable) {
-        const a = document.createElement("a");
-        a.className = "play";
-        const p = places[0] ?? PLACES[0]!;
-        a.href = `${playUrl}?lat=${p.lat}&lng=${p.lng}&seed=${state.seed}&style=${style.playable}${tilesUrl ? `&tiles=${encodeURIComponent(tilesUrl)}` : ""}`;
-        a.textContent = "Play this style →";
-        head.append(a);
-      }
+      const [tier, why] = tierOf(style.id);
+      const badge = document.createElement("span");
+      badge.className = `tier tier-${tier}`;
+      badge.textContent = `${tier}`;
+      badge.title = why;
+      const whyEl = document.createElement("span");
+      whyEl.className = "why";
+      whyEl.textContent = why;
+      head.prepend(badge);
+      head.append(whyEl);
+      // Every style can be played: the game's own renderers directly, lab styles through an adapter.
+      const p = places[0] ?? PLACES[0]!;
+      const a = document.createElement("a");
+      a.className = "play";
+      a.href = `${playUrl}?lat=${p.lat}&lng=${p.lng}&seed=${state.seed}&style=${style.playable ?? `lab:${style.id}`}${tilesUrl ? `&tiles=${encodeURIComponent(tilesUrl)}` : ""}`;
+      a.textContent = `Play at ${p.name} →`;
+      head.append(a);
       const blurb = document.createElement("p");
       blurb.className = "blurb";
       blurb.textContent = style.blurb;

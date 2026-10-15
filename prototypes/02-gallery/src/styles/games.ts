@@ -27,7 +27,7 @@ function noisePattern(ctx: Ctx, base: RGB, spread: number, size = 16, seed = 1):
 const ROOFS: RGB[] = [[120, 116, 110], [96, 92, 90], [140, 120, 100], [104, 110, 116]];
 
 /** GTA1/2: textured ground, lane paint, buildings leaning away from a camera high above the player. */
-function gta(sc: Scene, ctx: Ctx, night: boolean): void {
+export function gta(sc: Scene, ctx: Ctx, night: boolean, opts: { camera?: number } = {}): void {
   const pal = planPalette({ urban: [118, 112, 100], paved: [150, 146, 136], major: [60, 60, 62], minor: [68, 68, 70], park: [70, 110, 50], forest: [50, 90, 40], tree: [40, 80, 36], grass: [80, 116, 56], water: [40, 70, 110], building: [110, 106, 100] });
   pixelArt(sc, ctx, richShader(pal, { roofRows: false }), 8, 2);
   markings(sc, ctx, night ? "rgba(230,210,120,0.8)" : "rgba(240,220,120,0.9)", 2);
@@ -38,6 +38,7 @@ function gta(sc: Scene, ctx: Ctx, night: boolean): void {
     outline: "rgba(0,0,0,0.5)",
     lineWidth: 1,
     heightK: 1.2,
+    camera: opts.camera,
     windows: (b, quad, shade) => windowGrid(ctx, quad, night ? "rgba(255,220,140,0.95)" : `rgba(40,60,80,${0.5 + shade * 0.3})`, night ? (i) => ((i * 2654435761) >>> 0) % 7 < 3 + (b.r > 0.5 ? 1 : 0) : undefined),
     roofDetail: (b, pts) => {
       if (sc.scale < 3 || pts.length < 4) return;

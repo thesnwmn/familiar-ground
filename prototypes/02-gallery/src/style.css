@@ -218,3 +218,22 @@ form.spot input#spot {
 form.spot input#spot-name {
   width: 10em;
 }
+
+.tier {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.tier-A { background: #1f9d55; }
+.tier-B { background: #2f6fdb; }
+.tier-C { background: #b7791f; }
+.tier-D { background: #8a8a8a; }
+.style .why {
+  color: var(--muted);
+  font-size: 12px;
+}

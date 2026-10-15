@@ -12,7 +12,7 @@ import {
 import { createIdbDeltaStore } from "./idbStore.ts";
 import { poiAt } from "./pois.ts";
 import type { Renderer, View } from "./renderers/types.ts";
-import { STYLES, styleById } from "./styles.ts";
+import { STYLES, labStyles, styleById } from "./styles.ts";
 import { createWorkerProvider } from "./workerProvider.ts";
 
 // --- Parameters: ?lat=&lng=&seed=&style=&tiles= (tiles: TileJSON or .pmtiles URL; default OpenFreeMap) ---
@@ -56,11 +56,20 @@ function cellAt(gx: number, gy: number) {
 // --- Styles ---
 const styleSelect = document.getElementById("style") as HTMLSelectElement;
 for (const s of STYLES) styleSelect.append(new Option(s.label, s.id));
+// The style lab's ~70 styles, added once their (lazy) code has loaded.
+const labGroup = document.createElement("optgroup");
+labGroup.label = "Style lab (unoptimised)";
+styleSelect.append(labGroup);
+const labLoaded = labStyles().then((list) => {
+  for (const s of list) labGroup.append(new Option(s.label, s.id));
+  styleSelect.value = params.get("style") ?? styleSelect.value;
+});
 let styleRequest = 0;
 
 async function setStyle(id: string | null): Promise<void> {
   const info = styleById(id);
   const request = ++styleRequest;
+  if (info.id.startsWith("lab:") && ![...styleSelect.options].some((o) => o.value === info.id)) await labLoaded;
   styleSelect.value = info.id;
   statusEl.textContent = `Loading ${info.label}…`;
   let next: Renderer;
