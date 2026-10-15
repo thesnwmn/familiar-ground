@@ -32,6 +32,17 @@ export interface Poi {
   name?: string;
 }
 
+/** A road, path or rail centre line, for styles that draw markings (lane paint, crossings). */
+export interface RoadLine {
+  /** Map class, e.g. "primary", "minor", "path", "rail". */
+  cls: string;
+  ground: Ground;
+  /** Width in cells. */
+  width: number;
+  /** Centre line in chunk cell coordinates (unclipped; only lines near the chunk are kept). */
+  points: Point[];
+}
+
 /** The game's mutable model of one area. Renderers draw this; map data is never drawn directly. */
 export interface Chunk {
   cx: number;
@@ -45,6 +56,8 @@ export interface Chunk {
   building: Int32Array;
   buildings: BuildingInfo[];
   pois: Poi[];
+  /** Road and path centre lines near this chunk (read-only geometry from the map). */
+  roads: RoadLine[];
 }
 
 export interface BuildChunkInput {
@@ -84,6 +97,7 @@ export function buildChunk(input: BuildChunkInput): Chunk {
     building: new Int32Array(size * size).fill(-1),
     buildings: [],
     pois: [],
+    roads: [],
   };
 
   // Tile-local (0..extent) → chunk cell coordinates.
@@ -112,6 +126,11 @@ export function buildChunk(input: BuildChunkInput): Chunk {
     } else if (paint.kind === "line") {
       const w = paint.widthM / cellSizeM;
       for (const line of geom) strokeLine(line, w, size, (x, y) => (chunk.ground[y * size + x] = paint.ground));
+      if (ROAD_LIKE.has(paint.ground) && f.layer === "transportation") {
+        for (const line of geom) {
+          if (nearChunk(line, size, w + 2)) chunk.roads.push({ cls: String(f.props.class ?? ""), ground: paint.ground, width: w, points: line });
+        }
+      }
     } else {
       const index = chunk.buildings.length;
       let cells = 0;
@@ -159,6 +178,15 @@ export function buildChunk(input: BuildChunkInput): Chunk {
 
   scatterTrees(chunk, seed);
   return chunk;
+}
+
+const ROAD_LIKE = new Set<number>([Ground.ROAD_MAJOR, Ground.ROAD_MINOR, Ground.PATH, Ground.RAIL]);
+
+/** Whether a line's bounding box comes within `margin` cells of the chunk. */
+function nearChunk(points: Point[], size: number, margin: number): boolean {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of points) (minX = Math.min(minX, p.x)), (minY = Math.min(minY, p.y)), (maxX = Math.max(maxX, p.x)), (maxY = Math.max(maxY, p.y));
+  return maxX >= -margin && maxY >= -margin && minX <= size + margin && minY <= size + margin;
 }
 
 const TREE_DENSITY: Partial<Record<Ground, number>> = {

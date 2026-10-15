@@ -5,15 +5,16 @@ import type { Renderer, View } from "./types.ts";
 
 /** Screen pixels per texel (a cell is T texels wide). */
 const LEVELS = [
-  { texel: 6, speed: 1 },
-  { texel: 5, speed: 1 },
-  { texel: 4, speed: 0.9 },
-  { texel: 3, speed: 0.8 },
-  { texel: 2, speed: 0.65 },
+  { texel: 4, speed: 1 },
+  { texel: 3, speed: 1 },
+  { texel: 2, speed: 0.85 },
+  { texel: 1, speed: 0.65 },
 ];
 /** Animation is gentle, so ~30 fps is plenty and kinder to phone batteries. */
 const FRAME_MS = 33;
-const BAKES_PER_FRAME = 2;
+const BAKES_PER_FRAME = 1;
+/** Baked chunks kept in memory (each is a 1024² texel canvas, ~4 MB). */
+const BAKE_CACHE = 16;
 const PLAYER_LANTERN: RGB = [255, 200, 130];
 
 const rand = (a: number, b: number, salt: number) => hashInts(a, b, salt) / 4294967296;
@@ -105,6 +106,8 @@ export class LumenRenderer implements Renderer {
     const fw = cols * T;
     const fh = rows * T;
     for (const c of [this.frame, this.glow]) if (c.width !== fw || c.height !== fh) [c.width, c.height] = [fw, fh];
+    const tx0 = gx0 * T;
+    const ty0 = gy0 * T;
     if (this.lightMap.width !== cols || this.lightMap.height !== rows) [this.lightMap.width, this.lightMap.height] = [cols, rows];
 
     const light = this.lighting(player.x);
@@ -126,18 +129,30 @@ export class LumenRenderer implements Renderer {
       let baked = this.baked.get(chunk);
       if (!baked && bakes < BAKES_PER_FRAME) {
         baked = bakeChunk(chunk, view.seed, this.biomes);
-        this.baked.set(chunk, baked);
         bakes++;
       }
       if (!baked) continue;
+      // Keep recently drawn chunks at the end of the map so the oldest are evicted first.
+      this.baked.delete(chunk);
+      this.baked.set(chunk, baked);
       visible.push({ chunk, baked });
       f.drawImage(baked.albedo, cx * T, cy * T);
-      e.drawImage(baked.emissive, cx * T, cy * T);
+      const ctx0 = chunk.cx * CHUNK_CELLS * T - tx0;
+      const cty0 = chunk.cy * CHUNK_CELLS * T - ty0;
+      for (const p of baked.glows) {
+        const x = ctx0 + p.x;
+        const y = cty0 + p.y;
+        if (x < 0 || y < 0 || x >= fw || y >= fh) continue;
+        e.fillStyle = p.color;
+        e.fillRect(x, y, 1, 1);
+      }
       for (const l of baked.lights) {
         if (l.x - l.r > gx0 + cols || l.x + l.r < gx0 || l.y - l.r > gy0 + rows || l.y + l.r < gy0) continue;
         lights.push(l);
       }
     }
+
+    while (this.baked.size > BAKE_CACHE) this.baked.delete(this.baked.keys().next().value!);
 
     // Moving things, over the visible cells only.
     for (const { chunk, baked } of visible) {
@@ -242,7 +257,7 @@ export class LumenRenderer implements Renderer {
     // Sway: shift a texel when the breeze peaks; neighbouring trees are out of step.
     const w = Math.sin(t * 1.3 + phase + gx * 0.15);
     const sway = w > 0.65 ? 1 : w < -0.65 ? -1 : 0;
-    f.drawImage(this.canopy(b, variant), tx - 2 + sway, ty - 3);
+    f.drawImage(this.canopy(b, variant), tx - 2 + sway, ty - 6);
   }
 
   private drawWater(f: CanvasRenderingContext2D, gx: number, gy: number, tx: number, ty: number, t: number, b: Biome): void {
@@ -250,7 +265,7 @@ export class LumenRenderer implements Renderer {
     const wave = Math.sin(t * 2 + gx * 0.6 + gy * 0.3 + rand(gx, gy, 51) * 6);
     if (wave < 0.55) return;
     f.fillStyle = b === Biome.FROST ? "rgba(235,245,255,0.9)" : "rgba(120,180,240,0.85)";
-    f.fillRect(tx + (rand(gx, gy, 52) < 0.5 ? 0 : 1), ty + (wave > 0.85 ? 0 : 1), 1, 1);
+    f.fillRect(tx + Math.floor(rand(gx, gy, 52) * 2), ty + Math.floor(rand(gx, gy, 53) * T), wave > 0.85 ? 3 : 2, 1);
   }
 
   /** Chimney smoke from a few buildings: grey puffs rising and fading. */
@@ -258,8 +273,9 @@ export class LumenRenderer implements Renderer {
     if (rand(gx, gy, 60) > 0.0025 || dark < 0.2) return;
     for (let k = 0; k < 5; k++) {
       const age = (t * 0.8 + k * 0.6 + rand(gx, gy, 61) * 3) % 3;
+      const puff = age > 1.5 ? 2 : 1; // puffs spread as they rise
       f.fillStyle = `rgba(150,150,155,${(0.5 * (1 - age / 3)).toFixed(2)})`;
-      f.fillRect(tx + Math.round(Math.sin(age * 2 + k) * 1.2), ty - Math.round(age * 4), 1, 1);
+      f.fillRect(tx + 2 + Math.round(Math.sin(age * 2 + k) * 2.4), ty - Math.round(age * 8), puff, puff);
     }
   }
 
@@ -273,31 +289,31 @@ export class LumenRenderer implements Renderer {
         // Fireflies over greenery at night, blinking as they wander.
         if (green && dark > 0.4 && r < (b === Biome.OVERGROWN ? 0.008 : 0.004) && Math.sin(t * 2.2 + ph) > 0.1) {
           e.fillStyle = "rgb(210,255,120)";
-          e.fillRect(tx + Math.round(Math.sin(t * 0.7 + ph) * 3), ty + Math.round(Math.cos(t * 0.53 + ph) * 3), 1, 1);
+          e.fillRect(tx + 2 + Math.round(Math.sin(t * 0.7 + ph) * 6), ty + 2 + Math.round(Math.cos(t * 0.53 + ph) * 6), 1, 1);
         }
         break;
       case Biome.FUNGAL:
         // Spores drifting up from the ground.
         if (r < 0.006) {
-          const rise = (t * 2.5 + ph * 4) % 14;
-          e.fillStyle = `rgba(120,240,255,${(0.9 * (1 - rise / 14)).toFixed(2)})`;
-          e.fillRect(tx + Math.round(Math.sin(t + ph) * 1.5), ty - Math.round(rise), 1, 1);
+          const rise = (t * 5 + ph * 8) % 28;
+          e.fillStyle = `rgba(120,240,255,${(0.9 * (1 - rise / 28)).toFixed(2)})`;
+          e.fillRect(tx + 2 + Math.round(Math.sin(t + ph) * 3), ty - Math.round(rise), 1, 1);
         }
         break;
       case Biome.AUTUMN:
         // Falling leaves.
         if (r < 0.006) {
-          const fall = (t * 4 + ph * 5) % 18;
+          const fall = (t * 8 + ph * 10) % 36;
           f.fillStyle = r < 0.003 ? "rgb(220,120,40)" : "rgb(230,180,60)";
-          f.fillRect(tx + Math.round(fall * 0.4 + Math.sin(t * 2 + ph) * 1.5), ty - 9 + Math.round(fall), 1, 1);
+          f.fillRect(tx + Math.round(fall * 0.4 + Math.sin(t * 2 + ph) * 3), ty - 18 + Math.round(fall), 1, 1);
         }
         break;
       case Biome.FROST:
         // Snow.
         if (r < 0.03) {
-          const fall = (t * 6 + ph * 6) % 20;
+          const fall = (t * 12 + ph * 12) % 40;
           f.fillStyle = "rgba(250,252,255,0.95)";
-          f.fillRect(tx + Math.round(Math.sin(t * 1.5 + ph) * 1.2), ty - 10 + Math.round(fall), 1, 1);
+          f.fillRect(tx + 2 + Math.round(Math.sin(t * 1.5 + ph) * 2.4), ty - 20 + Math.round(fall), 1, 1);
         }
         break;
     }
@@ -308,13 +324,12 @@ export class LumenRenderer implements Renderer {
       f.fillStyle = c;
       f.fillRect(tx + x, ty + y, 1, 1);
     };
-    // 3×4 texels, standing on the cell.
-    px("#4a2c1a", 0, -2); px("#4a2c1a", 1, -2);
-    px("#f1c27d", 0, -1); px("#f1c27d", 1, -1);
-    px("#d63a3a", -1, 0); px("#d63a3a", 0, 0); px("#d63a3a", 1, 0);
-    px("#2b3a67", 0, 1); px("#2b3a67", 1, 1);
+    // 5×8 texels, feet on the cell.
+    const rows = [".hhh.", ".hsh.", ".sss.", "bbbbb", "sbbbs", ".bbb.", ".p.p.", ".k.k."];
+    const colors: Record<string, string> = { h: "#4a2c1a", s: "#f1c27d", b: "#d63a3a", p: "#2b3a67", k: "#1d1d22" };
+    rows.forEach((row, y) => [...row].forEach((ch, x) => ch !== "." && px(colors[ch]!, x, y - 4)));
     e.fillStyle = "rgb(255,220,150)";
-    e.fillRect(tx + (facing < 0 ? -1 : 2), ty, 1, 1); // lantern
+    e.fillRect(tx + (facing < 0 ? -1 : 5), ty, 1, 2); // lantern
   }
 
   /** Soft radial light sprite per colour. */
@@ -335,29 +350,34 @@ export class LumenRenderer implements Renderer {
     return s;
   }
 
-  /** 5×5 texel canopy: rounded blob with a lit top-left and shaded bottom-right. */
+  /** 9×9 texel canopy: a lumpy round crown with a lit top-left, shaded bottom-right and a dark outline. */
   private canopy(b: Biome, variant: number): HTMLCanvasElement {
     const key = `${b}:${variant}`;
     let c = this.canopies.get(key);
     if (c) return c;
     c = document.createElement("canvas");
-    c.width = c.height = 5;
+    c.width = c.height = 9;
     const ctx = c.getContext("2d")!;
     const [base, light, dark] = CANOPY[b];
-    const shape = [".###.", "#####", "#####", "#####", ".###."];
-    shape.forEach((row, y) =>
-      [...row].forEach((ch, x) => {
-        if (ch !== "#") return;
-        if (variant === 2 && (x + y) % 4 === 0) return; // a scruffier variant
-        const lit = x + y < 3;
-        const shade = x + y > 5;
-        const k = 0.9 + rand(x + variant * 7, y, b) * 0.2;
-        // Frost trees are snow-capped: white where the light catches them.
-        const col = lit ? light : shade ? dark : base;
+    for (let y = 0; y < 9; y++) {
+      for (let x = 0; x < 9; x++) {
+        // Lumpy outline: radius wobbles with angle, different per variant.
+        const dx = x - 4;
+        const dy = y - 4;
+        const angle = Math.atan2(dy, dx);
+        const radius = 3.9 + 0.6 * Math.sin(angle * 3 + variant * 2.1) * (variant === 2 ? 1.4 : 1);
+        const d = Math.hypot(dx, dy);
+        if (d > radius) continue;
+        const k = 0.9 + rand(x + variant * 11, y, b + 3) * 0.2;
+        const light2 = dx + dy < -2.5;
+        const shade = dx + dy > 2.5;
+        let col = light2 ? light : shade ? dark : base;
+        if (d > radius - 0.9) col = [dark[0] * 0.7, dark[1] * 0.7, dark[2] * 0.7]; // outline
+        if (b === Biome.FROST && light2) col = [236, 242, 250]; // snow on top
         ctx.fillStyle = rgba([col[0] * k, col[1] * k, col[2] * k]);
         ctx.fillRect(x, y, 1, 1);
-      }),
-    );
+      }
+    }
     this.canopies.set(key, c);
     return c;
   }

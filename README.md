@@ -41,7 +41,7 @@ pnpm build:site      # builds every prototype into _site/
 | `ascii` | 2D grid | rot.js glyphs, one cell per character (several when zoomed out) |
 | `pixel` | 2D grid | Procedural 8×8 pixel tiles in a 3/4 view: roofs plus south walls as tall as the building's floors; cached minimap when zoomed far out |
 | `iso` | 2D grid | Isometric diamonds drawn back to front; buildings are columns with floor lines |
-| `lumen` | 2D lit pixels | Low-res pixels under a smooth light map: streetlamps, lit windows, neon shop signs and your lantern; swaying trees, glinting water, fireflies and chimney smoke. Evening by default; `?time=night\|dusk\|day\|auto` (auto follows the sun at your longitude) |
+| `lumen` | 2D lit pixels | Fine pixels (4×4 per cell) under a smooth light map: streetlamps, lit windows, neon shop signs and your lantern; kerbs, pavements, centre lines, motorway lanes and zebra crossings where mapped footpaths cross roads; swaying trees, glinting water, fireflies and chimney smoke. Evening by default; `?time=night\|dusk\|day\|auto` (auto follows the sun at your longitude) |
 | `lumen-biomes` | 2D lit pixels | Lumen plus fantasy biome zones from the seed (temperate, overgrown, fungal, autumn, frost) that restyle ground, trees, lights and particles without moving any real road or building |
 | `sketch` | 2D vector | Ink outlines traced with marching squares, hatching, watercolour washes, tree scribbles and handwritten labels |
 | `voxel` | 3D (Three.js) | Voxel columns with visible storeys, cube trees, crisp pixel ground |

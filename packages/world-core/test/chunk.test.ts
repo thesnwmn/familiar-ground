@@ -40,6 +40,14 @@ describe("buildChunk", () => {
     expect(chunk.ground[at(128, 200)]).not.toBe(Ground.ROAD_MAJOR); // tunnel
   });
 
+  it("keeps road centre lines (not tunnels) for drawing markings", () => {
+    expect(chunk.roads).toHaveLength(1);
+    const road = chunk.roads[0]!;
+    expect(road.cls).toBe("primary");
+    expect(road.width).toBeCloseTo(12 / chunk.cellSizeM);
+    expect(road.points[0]!.y).toBeCloseTo(128);
+  });
+
   it("creates buildings typed and named by the POI inside them", () => {
     const i = at(156, 156);
     expect(chunk.structure[i]).toBe(Structure.BUILDING);
