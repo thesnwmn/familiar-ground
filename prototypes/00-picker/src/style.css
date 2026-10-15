@@ -89,3 +89,26 @@ a.play {
   color: var(--accent-fg);
   font-weight: 600;
 }
+fieldset {
+  margin: 0 0 10px;
+  padding: 6px 8px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+legend {
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+#styles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+}
+label.style {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}

@@ -44,7 +44,11 @@ describe("buildChunk", () => {
     const i = at(156, 156);
     expect(chunk.structure[i]).toBe(Structure.BUILDING);
     const b = chunk.buildings[chunk.building[i]!];
-    expect(b).toMatchObject({ id: "osm:777", kind: "supermarket", name: "Test Mart", levels: 4 });
+    expect(b).toMatchObject({ id: "osm:777", kind: "supermarket", name: "Test Mart", levels: 4, cells: 25 * 25 });
+    // Footprint kept as vector rings in cell coords: tile 1600..1700 → cells 144..169.
+    const xs = b!.rings[0]!.map((p) => p.x);
+    expect(Math.min(...xs)).toBeCloseTo(144);
+    expect(Math.max(...xs)).toBeCloseTo(169);
     expect(chunk.pois).toHaveLength(1);
   });
 

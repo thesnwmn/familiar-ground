@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Familiar Ground: ASCII</title>
+    <title>Familiar Ground</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -13,6 +13,7 @@
       <div id="status">Loading…</div>
       <div id="info"></div>
       <div id="actions">
+        <select id="style" aria-label="Rendering style" title="Rendering style (keys 1–6)"></select>
         <button type="button" data-action="break" title="Break what you're facing (X)">Break</button>
         <button type="button" data-action="build" title="Build a wall (B)">Build wall</button>
         <button type="button" data-action="zoom-in" title="Zoom in (+)" aria-label="Zoom in">＋</button>
@@ -20,7 +21,7 @@
       </div>
       <div class="keys">
         Drag on the map to walk (push further to go faster), pinch to zoom · Keys: arrows/WASD (Shift runs), <b>X</b> break, <b>B</b> build,
-        <b>+</b>/<b>−</b>/wheel zoom · <a id="back" href="#">Pick another place</a>
+        <b>+</b>/<b>−</b>/wheel zoom, <b>1</b>–<b>6</b> style · <a id="back" href="#">Pick another place</a>
       </div>
       <div class="attribution">
         Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>

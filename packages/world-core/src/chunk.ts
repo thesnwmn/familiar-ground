@@ -15,7 +15,12 @@ export interface BuildingInfo {
   id: string;
   kind: string;
   name?: string;
+  /** Floors, from the map's height when known. */
   levels?: number;
+  /** Footprint rings in chunk cell coordinates (unclipped, so they may extend past the chunk). */
+  rings: Point[][];
+  /** How many of this chunk's cells the footprint covered when generated (before player changes). */
+  cells: number;
 }
 
 export interface Poi {
@@ -109,19 +114,21 @@ export function buildChunk(input: BuildChunkInput): Chunk {
       for (const line of geom) strokeLine(line, w, size, (x, y) => (chunk.ground[y * size + x] = paint.ground));
     } else {
       const index = chunk.buildings.length;
-      let covered = false;
+      let cells = 0;
       fillPolygon(geom, size, (x, y) => {
         const i = y * size + x;
         chunk.structure[i] = Structure.BUILDING;
         chunk.building[i] = index;
-        covered = true;
+        cells++;
       });
-      if (!covered) continue;
+      if (cells === 0) continue;
       const h = Number(f.props.render_height ?? f.props.height ?? 0);
       chunk.buildings.push({
         id: f.id !== undefined ? `osm:${f.id}` : `chunk:${cx}:${cy}:${index}`,
         kind: "building",
         levels: h > 0 ? Math.max(1, Math.round(h / 3)) : undefined,
+        rings: geom,
+        cells,
       });
     }
   }

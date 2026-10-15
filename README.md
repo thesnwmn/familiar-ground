@@ -11,8 +11,8 @@ packages/
   world-core/     Map data → game world: geo maths, seeded RNG, tile loading,
                   classification, rasterising, chunks, saved changes. No rendering.
 prototypes/
-  00-picker/      Click anywhere on a real map to start
-  01-ascii/       ASCII renderer: proves the data → chunk → render pipeline
+  00-picker/      Click anywhere on a real map, pick a style, start
+  01-play/        The game shell plus six interchangeable rendering styles
 docs/             Research notes (data sources, pipeline, rendering, hosting, roadmap)
 scripts/          Build helpers (assembling the GitHub Pages site)
 ```
@@ -24,7 +24,7 @@ Requires Node 22+ and pnpm (`corepack enable`).
 ```sh
 pnpm install
 pnpm dev:picker      # http://localhost:5173
-pnpm dev:ascii       # http://localhost:5174/?lat=51.5072&lng=-0.1276&seed=1
+pnpm dev:play        # http://localhost:5174/?lat=51.5072&lng=-0.1276&seed=1&style=pixel
 pnpm typecheck
 pnpm test
 pnpm build:site      # builds every prototype into _site/
@@ -32,16 +32,28 @@ pnpm build:site      # builds every prototype into _site/
 
 ## Prototypes
 
-**00-picker**: a MapLibre map (OpenFreeMap style). Click to pick a spot, set a seed, then jump into a prototype. The search box uses Nominatim (one request per search).
+**00-picker**: a MapLibre map (OpenFreeMap style). Click to pick a spot, choose a style and a seed, then play. The search box uses Nominatim (one request per search).
 
-**01-ascii**: the real world as a roguelike map, streamed from OpenStreetMap vector tiles and built into chunks in a Web Worker.
+**01-play**: the real world, streamed from OpenStreetMap vector tiles and built into chunks in a Web Worker, drawn in your choice of style. You can switch style while playing (the dropdown or keys `1`–`6`); the world and your changes carry over.
 
-- URL parameters: `lat`, `lng`, `seed`, and optional `tiles` (a TileJSON or `.pmtiles` URL; defaults to OpenFreeMap).
-- Touch: drag anywhere on the map to walk (a joystick appears under your finger; the further you push, the faster you go (slower when zoomed out), diagonals slide along walls), pinch to zoom, and use the on-screen Break / Build wall / ＋ / − buttons.
-- Keys: arrows/WASD to move (Shift runs), `X` breaks the building, wall or tree you're facing, `B` builds a wall, `+`/`-` or the mouse wheel zoom, `Z` cycles zoom.
-- Zoom has five levels: three glyph sizes, then 2 and 4 map cells per character for an overview.
+| Style | Group | How it draws |
+|---|---|---|
+| `ascii` | 2D grid | rot.js glyphs, one cell per character (several when zoomed out) |
+| `pixel` | 2D grid | Procedural 8×8 pixel tiles in a 3/4 view: roofs plus south walls as tall as the building's floors; cached minimap when zoomed far out |
+| `iso` | 2D grid | Isometric diamonds drawn back to front; buildings are columns with floor lines |
+| `sketch` | 2D vector | Ink outlines traced with marching squares, hatching, watercolour washes, tree scribbles and handwritten labels |
+| `voxel` | 3D (Three.js) | Voxel columns with visible storeys, cube trees, crisp pixel ground |
+| `lowpoly` | 3D (Three.js) | Buildings extruded from their real footprints, flat-shaded pastels, cone trees |
+
+- URL parameters: `lat`, `lng`, `seed`, `style`, and optional `tiles` (a TileJSON or `.pmtiles` URL; defaults to OpenFreeMap).
+- Touch: drag anywhere on the map to walk (a joystick appears under your finger; the further you push, the faster you go, slower when zoomed out; diagonals slide along walls), pinch to zoom, and use the on-screen buttons.
+- Keys: arrows/WASD to move (Shift runs), `X` breaks the building, wall or tree you're facing, `B` builds a wall, `+`/`-` or the mouse wheel zoom, `Z` cycles zoom, `1`–`6` switch style.
 - Changes are saved per chunk in IndexedDB and survive reloads. The world itself is regenerated from map data + seed.
-- Named buildings (a POI inside the footprint) are highlighted, and the HUD shows what you're standing on and facing.
+- Named buildings (a POI inside the footprint) stand out in every style, and the HUD shows what you're standing on and facing.
+
+### Adding a style
+
+A style is a `Renderer` (`prototypes/01-play/src/renderers/types.ts`): it draws a `View` (world + player + zoom level) and can cache per-chunk work through `chunkLoaded` / `chunkChanged` / `chunkEvicted`. The shell owns the world, input, HUD and streaming. Register it in `src/styles.ts` (loaded on demand, so heavy libraries only download for the styles that use them) and add it to the picker's list.
 
 ## Contributing
 

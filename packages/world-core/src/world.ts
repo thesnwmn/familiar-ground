@@ -17,10 +17,16 @@ export class World {
     /** Namespaces saved deltas, e.g. by seed and data version. */
     private readonly storePrefix = "",
     private readonly onLoad?: (chunk: Chunk) => void,
+    private readonly onEvict?: (chunk: Chunk) => void,
   ) {}
 
   get loadedCount(): number {
     return this.chunks.size;
+  }
+
+  /** All currently loaded chunks. */
+  loaded(): IterableIterator<Chunk> {
+    return this.chunks.values();
   }
 
   getChunk(cx: number, cy: number): Chunk | undefined {
@@ -65,6 +71,7 @@ export class World {
       if (Math.abs(nearX - gx) > radius || Math.abs(nearY - gy) > radius) {
         this.chunks.delete(key);
         this.deltas.delete(key);
+        this.onEvict?.(c);
       }
     }
   }
