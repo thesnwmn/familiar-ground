@@ -4,9 +4,19 @@
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "typecheck": "tsc -p .",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@mapbox/vector-tile": "^3.0.0",
+    "pbf": "^5.1.2",
+    "pmtiles": "^4.5.0"
+  },
+  "devDependencies": {
+    "vt-pbf": "^3.1.3"
   }
 }

@@ -37,3 +37,24 @@ export function mulberry32(seed: number): Rng {
 export function rngFor(...keys: (string | number)[]): Rng {
   return mulberry32(hash32(...keys));
 }
+
+/** Fast integer hash for hot loops (per-cell decisions). Mixes 32-bit ints with murmur3-style finalisation. */
+export function hashInts(...nums: number[]): number {
+  let h = 0x9e3779b9;
+  for (const n of nums) {
+    h = Math.imul(h ^ (n | 0), 0x85ebca6b);
+    h = (h << 13) | (h >>> 19);
+    h = Math.imul(h, 5) + 0xe6546b64;
+  }
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+/** hashInts mapped to [0, 1). */
+export function randInts(...nums: number[]): number {
+  return hashInts(...nums) / 4294967296;
+}

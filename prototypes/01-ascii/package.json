@@ -1,0 +1,20 @@
+{
+  "name": "@familiar-ground/01-ascii",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ASCII roguelike view of the real world, streamed from OpenStreetMap vector tiles",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@familiar-ground/world-core": "workspace:*",
+    "idb-keyval": "^6.3.0",
+    "rot-js": "^2.2.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}
