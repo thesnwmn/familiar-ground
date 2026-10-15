@@ -30,6 +30,21 @@ pnpm test
 pnpm build:site      # builds every prototype into _site/
 ```
 
+## Prototypes
+
+**00-picker**: a MapLibre map (OpenFreeMap style). Click to pick a spot, set a seed, then jump into a prototype. The search box uses Nominatim (one request per search).
+
+**01-ascii**: the real world as a roguelike map, streamed from OpenStreetMap vector tiles and built into chunks in a Web Worker.
+
+- URL parameters: `lat`, `lng`, `seed`, and optional `tiles` (a TileJSON or `.pmtiles` URL; defaults to OpenFreeMap).
+- Keys: arrows/WASD to move (Shift runs), `X` breaks the building, wall or tree you're facing, `B` builds a wall, `Z` cycles zoom (×1, ×2, ×4).
+- Changes are saved per chunk in IndexedDB and survive reloads. The world itself is regenerated from map data + seed.
+- Named buildings (a POI inside the footprint) are highlighted, and the HUD shows what you're standing on and facing.
+
+## Contributing
+
+All changes go through pull requests and are **squash merged**, so `main` has one commit per PR. Recommended repo settings: *Settings → General → Pull Requests*: allow squash merging only; enable "Automatically delete head branches".
+
 ## Hosting
 
 Every push to `main` builds all prototypes into one static site and deploys it to GitHub Pages (`.github/workflows/pages.yml`). One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**.

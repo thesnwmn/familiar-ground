@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Familiar Ground: ASCII</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="screen" tabindex="0" aria-label="Game view"></div>
+    <div id="hud">
+      <div id="status">Loading…</div>
+      <div id="info"></div>
+      <div class="keys">
+        Move: arrows / WASD (Shift = run) · <b>X</b> break · <b>B</b> build wall · <b>Z</b> zoom · <a id="back" href="#">Pick another place</a>
+      </div>
+      <div class="attribution">
+        Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
+        · tiles <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

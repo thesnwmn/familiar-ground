@@ -7,6 +7,11 @@ A pnpm TypeScript monorepo of browser prototypes for a game generated from real-
 - `pnpm install`, `pnpm typecheck`, `pnpm test`, `pnpm build:site`
 - Run `pnpm typecheck && pnpm test` before committing.
 
+## Workflow
+
+- Never push to `main`. Every change goes on a branch and lands through a pull request, merged with **squash merge** so `main` has one commit per PR.
+- PR titles become the squash commit message: make them descriptive.
+
 ## Conventions
 
 - `packages/world-core` must stay renderer-agnostic: no DOM, no rendering libraries. It must run in a Web Worker and in Node (tests).
