@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Familiar Ground: Style Lab</title>
+    <script type="module" crossorigin src="./assets/index-B2AIeqg8.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BHAtxnS4.css">
+  </head>
+  <body>
+    <header>
+      <h1>Style lab</h1>
+      <p class="intro">
+        Every style here draws the same real places from the same map data. Look across a row to see a style at different places and zooms, or down a column to compare styles. Grid cities and organic, off-straight ones are mixed on purpose. Tap an image to see it large.
+      </p>
+      <div class="controls">
+        <div class="ctl"><span>Places</span><div id="places" class="chips"></div></div>
+        <div class="ctl"><span>Zooms</span><div id="zooms" class="chips"></div></div>
+        <div class="ctl"><span>Groups</span><div id="groups" class="chips"></div></div>
+        <div class="ctl row">
+          <label>Size <select id="size"><option value="s">Small</option><option value="m" selected>Medium</option><option value="l">Large</option></select></label>
+          <label>Seed <input id="seed" type="number" min="0" step="1" /></label>
+          <span id="progress" class="muted"></span>
+        </div>
+      </div>
+    </header>
+    <main id="styles"></main>
+    <footer class="muted">
+      Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · tiles <a href="https://openfreemap.org">OpenFreeMap</a>
+    </footer>
+    <div id="lightbox" hidden>
+      <figure>
+        <div id="lb-image"></div>
+        <figcaption id="lb-caption"></figcaption>
+      </figure>
+    </div>
+  </body>
+</html>
