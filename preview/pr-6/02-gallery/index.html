@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Familiar Ground: Style Lab</title>
+    <script type="module" crossorigin src="./assets/index-BTfJMDx1.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/src-BujHin5_.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-teUPmQ1h.css">
+  </head>
+  <body>
+    <header>
+      <h1>Style lab</h1>
+      <p class="intro">
+        Every style here draws the same real places from the same map data, rated A–D for how well it would work as the main view of a top-down game (explore, gather, fight gangs, go inside). "Play at…" launches any style in the game so you can walk around in it. Look across a row to see a style at different places and zooms, or down a column to compare styles. Grid cities and organic, off-straight ones are mixed on purpose. Tap an image to see it large.
+      </p>
+      <div class="controls">
+        <div class="ctl">
+          <span>Your spot</span>
+          <div>
+            <form id="spot-form" class="spot">
+              <input id="spot" type="text" inputmode="text" placeholder="51.5136, -0.1336 or paste a map link" aria-label="Coordinates or map link" />
+              <input id="spot-name" type="text" placeholder="Name (optional)" aria-label="Name" />
+              <button type="submit" class="chip">Add</button>
+              <button type="button" id="locate" class="chip">📍 My location</button>
+              <button type="button" id="surprise" class="chip">🎲 Surprise me</button>
+            </form>
+            <div id="spot-msg" class="muted"></div>
+          </div>
+        </div>
+        <div class="ctl"><span>Places</span><div id="places" class="chips"></div></div>
+        <div class="ctl"><span>Zooms</span><div id="zooms" class="chips"></div></div>
+        <div class="ctl"><span>Groups</span><div id="groups" class="chips"></div></div>
+        <div class="ctl"><span>Playable?</span><div id="tiers" class="chips"></div></div>
+        <div class="ctl row">
+          <label>Size <select id="size"><option value="s">Small</option><option value="m" selected>Medium</option><option value="l">Large</option></select></label>
+          <label title="Turns the camera for styles marked ↻ (walls styles and oblique play views)">Camera angle <select id="angle"><option value="0">0° (north up)</option><option value="30">30°</option><option value="45">45°</option><option value="90">90°</option><option value="180">180°</option><option value="auto">Follow the street</option></select></label>
+          <label>Seed <input id="seed" type="number" min="0" step="1" /></label>
+          <span id="progress" class="muted"></span>
+        </div>
+      </div>
+    </header>
+    <main id="styles"></main>
+    <footer class="muted">
+      Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · tiles <a href="https://openfreemap.org">OpenFreeMap</a>
+    </footer>
+    <div id="lightbox" hidden>
+      <figure>
+        <div id="lb-image"></div>
+        <figcaption id="lb-caption"></figcaption>
+      </figure>
+    </div>
+  </body>
+</html>
