@@ -1,0 +1,18 @@
+{
+  "name": "@familiar-ground/02-gallery",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Style lab: dozens of rendering styles and mashups, rendered as stills of the same real places at several zooms",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@familiar-ground/world-core": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

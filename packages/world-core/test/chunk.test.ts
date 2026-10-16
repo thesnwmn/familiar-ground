@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildChunk, CHUNK_CELLS } from "../src/chunk.ts";
 import { decodeTile } from "../src/features.ts";
 import { Ground, Structure } from "../src/vocab.ts";
-import { neighbourhoodTile } from "./fixtures.ts";
+import { encodeTile, neighbourhoodTile, rect } from "./fixtures.ts";
 
 // London z14 tile 8186/5448; the chunk at offset (1, 1) inside it.
 const TX = 8186;
@@ -12,6 +12,29 @@ const CY = TY * 4 + 1;
 const features = decodeTile(neighbourhoodTile());
 const build = (seed = 1) => buildChunk({ cx: CX, cy: CY, seed, dataZoom: 14, features });
 const at = (x: number, y: number) => y * CHUNK_CELLS + x;
+
+describe("merged buildings", () => {
+  it("splits a multi-polygon building feature into one building per outline, keeping holes", () => {
+    const tile = encodeTile({
+      building: [
+        {
+          type: 3,
+          id: 5,
+          // Two separate outlines in one feature (how OpenMapTiles ships buildings at z14); the second has a courtyard.
+          geometry: [rect(1100, 1100, 1140, 1140), rect(1300, 1300, 1400, 1400), rect(1340, 1340, 1360, 1360).reverse()],
+          tags: { render_height: 9 },
+        },
+      ],
+    });
+    const c = buildChunk({ cx: CX, cy: CY, seed: 1, dataZoom: 14, features: decodeTile(tile) });
+    expect(c.buildings.map((b) => b.id)).toEqual(["osm:5#0", "osm:5#1"]);
+    expect(c.buildings[1]!.rings).toHaveLength(2);
+    // Tile units 1100..1140 → cells 19..29; 1300..1400 → 69..94 with a courtyard at 79..84.
+    expect(c.building[at(24, 24)]).toBe(0);
+    expect(c.building[at(72, 72)]).toBe(1);
+    expect(c.structure[at(81, 81)]).not.toBe(Structure.BUILDING);
+  });
+});
 
 describe("decodeTile", () => {
   it("decodes layers, properties and ids", () => {

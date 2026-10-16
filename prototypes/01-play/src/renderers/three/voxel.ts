@@ -25,6 +25,8 @@ const ROOFS: RGB[] = [
  */
 export class VoxelRenderer extends ThreeRenderer {
   readonly zoomLevels: Zoom3D[] = [
+    { dist: 9, speed: 0.45 },
+    { dist: 14, speed: 0.6 },
     { dist: 22, speed: 1 },
     { dist: 36, speed: 1 },
     { dist: 60, speed: 0.85 },

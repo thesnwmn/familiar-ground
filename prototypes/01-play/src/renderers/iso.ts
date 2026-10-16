@@ -5,7 +5,9 @@ import type { Renderer, View } from "./types.ts";
 
 /** Half-width of a tile diamond in pixels (tiles are 2s wide and s tall). */
 const LEVELS = [
-  { s: 28, speed: 1 },
+  { s: 56, speed: 0.5 },
+  { s: 40, speed: 0.65 },
+  { s: 28, speed: 0.8 },
   { s: 20, speed: 1 },
   { s: 14, speed: 0.9 },
   { s: 9, speed: 0.8 },

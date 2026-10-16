@@ -4,6 +4,9 @@ import type { Renderer, View } from "./types.ts";
 
 /** Pixels per cell. */
 const LEVELS = [
+  { scale: 40, speed: 0.45 },
+  { scale: 28, speed: 0.55 },
+  { scale: 20, speed: 0.7 },
   { scale: 16, speed: 1 },
   { scale: 11, speed: 1 },
   { scale: 7, speed: 0.9 },

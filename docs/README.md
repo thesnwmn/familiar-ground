@@ -53,3 +53,4 @@ Do that and "pixel art post-apocalyptic London" and "ASCII medieval Tokyo" are t
 4. [Architecture and hosting](04-architecture-and-hosting.md): engine choices, client/worker split, free hosting, mobile/PC and when a backend is needed.
 5. [Prior art](05-prior-art.md): projects that already do parts of this.
 6. [Roadmap and risks](06-roadmap.md): a phased prototype plan and the main pitfalls.
+7. [Styles for play](07-styles-for-play.md): which style-lab looks work as a game view, ranked, plus the recommended camera, visibility and interiors.

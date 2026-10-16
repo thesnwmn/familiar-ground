@@ -6,7 +6,9 @@ import type { Renderer, View } from "./types.ts";
 
 /** Pixels per cell. Tile levels are whole multiples of the 8-texel tiles; smaller ones switch to a minimap. */
 const LEVELS = [
-  { cell: 32, speed: 1 },
+  { cell: 64, speed: 0.45 },
+  { cell: 48, speed: 0.55 },
+  { cell: 32, speed: 0.65 },
   { cell: 24, speed: 1 },
   { cell: 16, speed: 1 },
   { cell: 8, speed: 0.9 },
@@ -32,7 +34,7 @@ const isRoad = (g: number) => g === Ground.ROAD_MINOR || g === Ground.ROAD_MAJOR
 /** Top-down pixel art with a 3/4 view: buildings show their roof plus a south wall whose height follows their floors. */
 export class PixelRenderer implements Renderer {
   readonly zoomLevels = LEVELS;
-  readonly defaultZoom = 2;
+  readonly defaultZoom = 3;
   private canvas!: HTMLCanvasElement;
   private ctx!: CanvasRenderingContext2D;
   private width = 0;

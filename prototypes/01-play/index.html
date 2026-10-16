@@ -18,10 +18,13 @@
         <button type="button" data-action="build" title="Build a wall (B)">Build wall</button>
         <button type="button" data-action="zoom-in" title="Zoom in (+)" aria-label="Zoom in">＋</button>
         <button type="button" data-action="zoom-out" title="Zoom out (−)" aria-label="Zoom out">−</button>
+        <button type="button" class="cam" data-action="turn-left" title="Turn camera left (Q)" aria-label="Turn camera left" hidden>⟲</button>
+        <button type="button" class="cam" data-action="turn-right" title="Turn camera right (E)" aria-label="Turn camera right" hidden>⟳</button>
+        <button type="button" class="cam" data-action="follow" title="Camera follows the street (F)" aria-pressed="false" hidden>Follow street</button>
       </div>
       <div class="keys">
         Drag on the map to walk (push further to go faster), pinch to zoom · Keys: arrows/WASD (Shift runs), <b>X</b> break, <b>B</b> build,
-        <b>+</b>/<b>−</b>/wheel zoom, <b>1</b>–<b>8</b> style · <a id="back" href="#">Pick another place</a>
+        <b>+</b>/<b>−</b>/wheel zoom, <b>1</b>–<b>8</b> style, <b>Q</b>/<b>E</b> turn and <b>F</b> follow the street (↻ styles; or twist two fingers) · <a id="back" href="#">Pick another place</a>
       </div>
       <div class="attribution">
         Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>

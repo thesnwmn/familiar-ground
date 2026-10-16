@@ -132,22 +132,28 @@ export function buildChunk(input: BuildChunkInput): Chunk {
         }
       }
     } else {
-      const index = chunk.buildings.length;
-      let cells = 0;
-      fillPolygon(geom, size, (x, y) => {
-        const i = y * size + x;
-        chunk.structure[i] = Structure.BUILDING;
-        chunk.building[i] = index;
-        cells++;
-      });
-      if (cells === 0) continue;
+      // Tile builders merge neighbouring buildings with identical attributes into one multi-polygon
+      // feature (OpenMapTiles does this at z14), so split it back into one building per outline.
       const h = Number(f.props.render_height ?? f.props.height ?? 0);
-      chunk.buildings.push({
-        id: f.id !== undefined ? `osm:${f.id}` : `chunk:${cx}:${cy}:${index}`,
-        kind: "building",
-        levels: h > 0 ? Math.max(1, Math.round(h / 3)) : undefined,
-        rings: geom,
-        cells,
+      const parts = splitPolygons(geom);
+      parts.forEach((rings, part) => {
+        const index = chunk.buildings.length;
+        let cells = 0;
+        fillPolygon(rings, size, (x, y) => {
+          const i = y * size + x;
+          chunk.structure[i] = Structure.BUILDING;
+          chunk.building[i] = index;
+          cells++;
+        });
+        if (cells === 0) return;
+        const base = f.id !== undefined ? `osm:${f.id}` : `chunk:${cx}:${cy}:${index}`;
+        chunk.buildings.push({
+          id: parts.length > 1 ? `${base}#${part}` : base,
+          kind: "building",
+          levels: h > 0 ? Math.max(1, Math.round(h / 3)) : undefined,
+          rings,
+          cells,
+        });
       });
     }
   }
@@ -178,6 +184,29 @@ export function buildChunk(input: BuildChunkInput): Chunk {
 
   scatterTrees(chunk, seed);
   return chunk;
+}
+
+const signedArea = (ring: Point[]) => {
+  let a = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) a += ring[j]!.x * ring[i]!.y - ring[i]!.x * ring[j]!.y;
+  return a;
+};
+
+/**
+ * Splits MVT polygon rings into separate polygons: a ring wound like the first one starts a new
+ * polygon (an outer ring); a ring wound the other way is a hole in the polygon before it.
+ */
+export function splitPolygons(rings: Point[][]): Point[][][] {
+  const polygons: Point[][][] = [];
+  let outerSign = 0;
+  for (const ring of rings) {
+    const area = signedArea(ring);
+    if (area === 0) continue;
+    if (!outerSign) outerSign = Math.sign(area);
+    if (Math.sign(area) === outerSign || !polygons.length) polygons.push([ring]);
+    else polygons[polygons.length - 1]!.push(ring);
+  }
+  return polygons;
 }
 
 const ROAD_LIKE = new Set<number>([Ground.ROAD_MAJOR, Ground.ROAD_MINOR, Ground.PATH, Ground.RAIL]);

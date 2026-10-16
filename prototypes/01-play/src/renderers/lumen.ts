@@ -5,6 +5,9 @@ import type { Renderer, View } from "./types.ts";
 
 /** Screen pixels per texel (a cell is T texels wide). */
 const LEVELS = [
+  { texel: 10, speed: 0.45 },
+  { texel: 7, speed: 0.55 },
+  { texel: 5, speed: 0.7 },
   { texel: 4, speed: 1 },
   { texel: 3, speed: 1 },
   { texel: 2, speed: 0.85 },

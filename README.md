@@ -12,7 +12,8 @@ packages/
                   classification, rasterising, chunks, saved changes. No rendering.
 prototypes/
   00-picker/      Click anywhere on a real map, pick a style, start
-  01-play/        The game shell plus six interchangeable rendering styles
+  01-play/        The game shell plus interchangeable rendering styles
+  02-gallery/     Style lab: ~60 styles and mashups as stills of the same real places
 docs/             Research notes (data sources, pipeline, rendering, hosting, roadmap)
 scripts/          Build helpers (assembling the GitHub Pages site)
 ```
@@ -25,6 +26,7 @@ Requires Node 22+ and pnpm (`corepack enable`).
 pnpm install
 pnpm dev:picker      # http://localhost:5173
 pnpm dev:play        # http://localhost:5174/?lat=51.5072&lng=-0.1276&seed=1&style=pixel
+pnpm dev:gallery     # http://localhost:5175/
 pnpm typecheck
 pnpm test
 pnpm build:site      # builds every prototype into _site/
@@ -52,6 +54,12 @@ pnpm build:site      # builds every prototype into _site/
 - Keys: arrows/WASD to move (Shift runs), `X` breaks the building, wall or tree you're facing, `B` builds a wall, `+`/`-` or the mouse wheel zoom, `Z` cycles zoom, `1`–`8` switch style.
 - Changes are saved per chunk in IndexedDB and survive reloads. The world itself is regenerated from map data + seed.
 - Named buildings (a POI inside the footprint) stand out in every style, and the HUD shows what you're standing on and facing.
+
+**02-gallery** (style lab): a single page of still images for exploring looks without playing. Every style draws the same real places (grid cities like Manhattan, Barcelona and Chicago; organic ones like Soho, Paris's Étoile, Amsterdam's canals, Venice, Marrakech and St Ives) at several zooms, from up close (on foot) to district. Pick places, zooms, groups, image size and seed; tap an image for a large render. Add your own spot by pasting coordinates or a Google Maps / OpenStreetMap link, or with "My location"; the picker also has a "See this spot in every style" link. Spots are kept in the URL (`?spots=lat,lng,name;…`), so a view can be bookmarked or shared. Images render lazily as you scroll. The *Walls* groups stand every plan look up as oblique 3/4, from-the-player perspective, low drone or cavalier views. Styles marked ↻ follow the *Camera angle* control (fixed angles, or follow the street); in the game, Q/E, a two-finger twist and F (follow the street) turn them.
+
+- Groups: plans & lines (including the *lit plan*), top-down games (GTA2, Hotline Miami, Pokémon, Game Boy, Stardew, Civ hexes, Factorio, Frostpunk, SNES, Pip-Boy, radar, Dwarf Fortress, Braille, Obra Dinn, RTS fog, cyberpunk, tilt-shift, dungeon map), other worlds (Lumen at 8× and 16× pixel density, ruins, flood, medieval, bioluminescent, winter, desert, lava, candy, Atlantis), print & craft (risograph, halftone, Lego, cross-stitch, papercraft, stained glass, pointillism, sumi-e, felt) and sensors & data (thermal, Earth at night, 1940s aerial, X-ray, hotspots, night vision), plus the game's own styles.
+- **Playable candidates** group: mock-ups with a player, gangs, loot, resources and a HUD on top (oblique 3/4, perspective from the player, low drone camera, line of sight by night and day, entering a building with a generated interior, lit oblique night, tactical plan, toy perspective). Every style has a playability rating (A–D, filterable) explained in `docs/07-styles-for-play.md`, and a **Play at…** link: any lab style can be launched in 01-play (`?style=lab:<id>`) via a generic, unoptimised adapter, so you can walk around in it. "🎲 Surprise me" adds three random city spots; the **Game** zoom (7 px/cell) is the intended play scale.
+- Styles are recipes built from a small kit in `src/kit/`: smooth vector-like masks from the cell grid, pixel art at any density, real road lines and footprints, GTA-style perspective extrusion, a shared lighting model, and post effects (dithering/palettes, halftone, ink edges, tilt-shift, scanlines…). A new style is usually 10–30 lines in `src/styles/`.
 
 ### Adding a style
 

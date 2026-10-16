@@ -26,6 +26,8 @@ const soften = (g: Ground): RGB => {
  */
 export class LowPolyRenderer extends ThreeRenderer {
   readonly zoomLevels: Zoom3D[] = [
+    { dist: 10, speed: 0.45 },
+    { dist: 16, speed: 0.6 },
     { dist: 26, speed: 1 },
     { dist: 42, speed: 1 },
     { dist: 70, speed: 0.85 },

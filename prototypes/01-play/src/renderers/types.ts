@@ -8,6 +8,8 @@ export interface View {
   zoomLevel: number;
   /** World seed, for renderers that add deterministic decoration (biomes, lamps). */
   seed: number;
+  /** Camera turn in radians, clockwise on screen (only rotatable renderers use it). */
+  angle: number;
 }
 
 export interface ZoomLevel {
@@ -23,6 +25,10 @@ export interface Renderer {
   /** Most zoomed-in first. */
   readonly zoomLevels: readonly ZoomLevel[];
   readonly defaultZoom: number;
+  /** Honours `View.angle`: the shell then offers Q/E, twist and follow-the-street, and walks relative to the screen. */
+  readonly rotatable?: boolean;
+  /** Angle that would make the street near the player run up the screen (for follow-the-street). */
+  streetAngle?(view: View): number | null;
   mount(container: HTMLElement): void;
   resize(width: number, height: number): void;
   /** Radius in cells around the player that should be loaded for the current view. */

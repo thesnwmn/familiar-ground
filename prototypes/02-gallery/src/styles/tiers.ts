@@ -1,0 +1,105 @@
+import { WALL_TIERS } from "./walls.ts";
+
+/**
+ * How suitable each style is as the main view of a top-down game about exploring, gathering,
+ * fighting gangs and going into buildings. See docs/07-styles-for-play.md for the reasoning.
+ *
+ * A: build the game on it.  B: strong alternative, theme or mode.  C: useful as a map screen,
+ * gadget, overlay or UI.  D: art toy; lovely to look at, not for playing in.
+ */
+export type Tier = "A" | "B" | "C" | "D";
+
+export const TIERS: Record<string, [Tier, string]> = {
+  // Playable candidates
+  "play-ligne-oblique": ["A", "Smooth comic lines with walls and cover"],
+  "play-lit-persp": ["A", "Lumen mood, real shapes, walls round you"],
+  "play-tactical-oblique": ["A", "Clearest fight view with walls"],
+  "play-clean-persp": ["A", "Calm, readable perspective"],
+  "play-follow-street": ["A", "Oblique that turns with the street: new walls round every corner"],
+  "play-oblique": ["A", "Stable camera, walls visible, actors read clearly"],
+  "play-oblique-pixel": ["A", "Oblique with pixel charm and correct shapes"],
+  "play-perspective": ["A", "Best sense of place; tune the lean to avoid swim"],
+  "play-drone": ["B", "Cinematic; too strong for everyday play"],
+  "play-los-night": ["A", "Mechanic: vision + shadows make fights and stealth"],
+  "play-los-day": ["A", "Mechanic: honest visibility in daylight"],
+  "play-enter": ["A", "Mechanic: cutaway interiors from real footprints"],
+  "play-lit-oblique": ["A", "Mood of Lumen with oblique readability"],
+  "play-tactical": ["B", "Most readable, least atmospheric"],
+  "play-toy": ["B", "Clear and friendly; lighter tone"],
+  // Plans & lines
+  "lit-plan": ["B", "Lovely light, but flat: no walls to read cover"],
+  "lit-plan-moon": ["B", "Night variant of the flat lit plan"],
+  "lit-plan-pixels": ["B", "Fixes pixel shapes; still flat"],
+  blueprint: ["C", "Interior plans / building intel screen"],
+  "ligne-claire": ["B", "Strong art direction; works with oblique walls"],
+  "ink-watercolor": ["C", "Map or journal screen"],
+  "treasure-map": ["C", "Quest / world map"],
+  "neon-grid": ["C", "Hacking or scanner mode"],
+  "white-model": ["B", "Planning / heist-prep view"],
+  toybox: ["B", "Cosy tone; needs walls for cover"],
+  "boogie-woogie": ["D", "Art piece"],
+  "topo-city": ["D", "Beautiful, not navigable"],
+  "cad-night": ["C", "Terminal / intel screen"],
+  "moss-plan": ["C", "Theme layer (overgrowth), not a camera"],
+  "lit-plan-warm-pixels": ["C", "Painterly mood test"],
+  // Top-down games
+  gta2: ["A", "Proven top-down action camera"],
+  "gta2-night": ["A", "Same with lighting; great for gang fights"],
+  hotline: ["B", "Iconic, but flat walls and heavy post FX"],
+  pokemon: ["B", "Readable tiles; no wall height"],
+  gameboy: ["C", "Retro filter mode"],
+  stardew: ["B", "Cosy pixel; fences and crops are useful props"],
+  "civ-hex": ["C", "Strategic / territory map for gangs"],
+  factorio: ["D", "Theme joke; hard to read people"],
+  frostpunk: ["B", "Theme: winter survival"],
+  snes: ["B", "Dense pixels read well; flat roofs"],
+  pipboy: ["C", "In-game map screen"],
+  radar: ["C", "Minimap"],
+  "dwarf-fortress": ["D", "Niche; text density hurts action"],
+  braille: ["D", "Text-art toy"],
+  "obra-dinn": ["C", "Flashback / photo filter"],
+  "rts-fog": ["B", "Fog of war mechanic + perspective"],
+  "cyberpunk-rain": ["B", "Theme: neon night"],
+  "tilt-shift": ["C", "Photo mode"],
+  "zelda-dungeon-map": ["C", "Interior map screen"],
+  // Other worlds
+  "lumen-8x": ["B", "Lighting good; cell-based shapes still lumpy"],
+  "lumen-16x": ["B", "Smoother, but walls are flat"],
+  ruins: ["B", "Theme: post-apocalypse"],
+  flooded: ["B", "Theme / event: the flood"],
+  medieval: ["B", "Theme: another era"],
+  bioluminescent: ["B", "Theme: alien night"],
+  "winter-postcard": ["B", "Theme: snow + warm windows"],
+  dune: ["C", "Theme sketch; low contrast"],
+  lava: ["D", "Event / joke mode"],
+  candy: ["D", "Event / joke mode"],
+  atlantis: ["C", "Theme sketch; low contrast"],
+  // Print & craft
+  riso: ["D", "Poster art"],
+  newsprint: ["D", "Poster art"],
+  lego: ["D", "Toy"],
+  "cross-stitch": ["D", "Toy"],
+  papercraft: ["C", "Menu / loading art"],
+  "stained-glass": ["D", "Art piece"],
+  pointillism: ["D", "Art piece"],
+  "sumi-e": ["D", "Art piece"],
+  "embroidered-patch": ["D", "Toy"],
+  // Sensors & data
+  thermal: ["C", "Gadget: thermal goggles"],
+  "earth-night": ["C", "World map / fast travel"],
+  "aerial-1940s": ["C", "Intro / photo mode"],
+  xray: ["C", "Gadget: see through walls into interiors"],
+  hotspots: ["C", "Data overlay: where the loot is"],
+  "night-vision": ["C", "Gadget: night vision"],
+  // The game's own styles
+  "game-ascii": ["C", "Debug / roguelike mode"],
+  "game-pixel": ["B", "3/4 pixel; cell shapes are blocky"],
+  "game-iso": ["C", "Buildings hide the streets behind them"],
+  "game-lumen": ["B", "Great light; flat, lumpy shapes"],
+  "game-lumen-biomes": ["B", "Theme layer over Lumen"],
+  "game-sketch": ["C", "Map screen"],
+  "game-voxel": ["B", "True 3D; destructible; heavier"],
+  "game-lowpoly": ["B", "True 3D with real shapes; camera can rotate"],
+};
+
+export const tierOf = (id: string): [Tier, string] => TIERS[id] ?? WALL_TIERS[id] ?? ["C", ""];
