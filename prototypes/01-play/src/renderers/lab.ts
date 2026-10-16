@@ -4,10 +4,15 @@ import type { StillStyle } from "../../../02-gallery/src/styles/types.ts";
 import { createFillCanvas } from "./sample.ts";
 import type { Renderer, View } from "./types.ts";
 
-/** Pixels per cell: close, game, street, district. */
+/**
+ * Pixels per cell (a cell is ~1.5 m in London). Up close and on foot are for walking and fights,
+ * then close, vehicle (driving), street and district. Closer levels walk slower on screen.
+ */
 const LEVELS = [
-  { scale: 16, speed: 1 },
-  { scale: 12, speed: 1 },
+  { scale: 40, speed: 0.45 },
+  { scale: 28, speed: 0.55 },
+  { scale: 20, speed: 0.65 },
+  { scale: 14, speed: 0.8 },
   { scale: 7, speed: 0.9 },
   { scale: 4, speed: 0.75 },
   { scale: 2, speed: 0.6 },

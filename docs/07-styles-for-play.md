@@ -78,7 +78,18 @@ An oblique camera only shows south walls, so a gang hiding behind the north side
 
 ## Zoom for play
 
-The lab now has a **Game** zoom (7 px per cell, roughly 50 × 100 m on a phone in portrait). It's the right default for fights: you see a block or two ahead and gangs at the next corner. Use **Close** (12+) inside buildings and **Street** (4) for exploring and travel. **District** (1–2) is a map, not a play zoom. Zoom should follow context: closer indoors and in combat, wider when running or driving.
+On foot is much closer than first assumed. A cell is about 1.5 m (in London), and a phone in portrait is about 400 px wide.
+
+| Zoom | px per cell | Phone width shows | Use |
+|---|---|---|---|
+| Up close | 40 | ~15 m | Inside buildings, melee, looting, conversations |
+| **On foot** (default) | 20–22 | ~30 m | Walking, exploring and gunfights: a street and both pavements |
+| Close | 12–14 | ~50 m | Running, scouting a block |
+| Vehicle | 7 | ~90 m | Driving: you need to see the junction ahead |
+| Street | 4 | ~150 m | Fast travel and planning |
+| District | 1–2 | ~400 m+ | A map, not a play view |
+
+Every style in the game now has the closer levels; on foot is the default, and the closer levels walk slower on screen. Zoom should follow context: up close indoors, on foot by default, pulled out when running and further when driving. Up close is where styles need the most detail: flat colours that look fine from afar look empty at 40 px per cell, so close-up play needs textured ground, props (bins, benches, cars, lamps), animated details and lighting. That's what the next Lumen work should explore.
 
 ## Recommendation
 

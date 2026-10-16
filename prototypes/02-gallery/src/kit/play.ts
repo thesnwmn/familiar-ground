@@ -159,7 +159,7 @@ const KIND_COLOR: Record<Actor["kind"], RGB> = {
 
 /** Draws actors with strong outlines so they read on any style. */
 export function drawActors(sc: Scene, ctx: Ctx, actors: Actor[], opts: { outline?: string; scale?: number } = {}): void {
-  const s = Math.max(3.2, Math.min(9, sc.scale * 0.55)) * (opts.scale ?? 1);
+  const s = Math.max(3.2, Math.min(16, sc.scale * 0.5)) * (opts.scale ?? 1);
   const outline = opts.outline ?? "#0b0b0e";
   ctx.save();
   for (const a of actors) {
@@ -208,7 +208,7 @@ export function drawActors(sc: Scene, ctx: Ctx, actors: Actor[], opts: { outline
 
 /** The player at the centre: body, facing, and an aim line. */
 export function drawPlayer(sc: Scene, ctx: Ctx, facing = -0.7, color: RGB = [60, 160, 255]): void {
-  const s = Math.max(4, Math.min(10, sc.scale * 0.6));
+  const s = Math.max(4, Math.min(18, sc.scale * 0.55));
   const x = sc.W / 2;
   const y = sc.H / 2;
   ctx.save();

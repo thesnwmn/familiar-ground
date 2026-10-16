@@ -6,14 +6,14 @@ import type { StillStyle } from "./types.ts";
 
 /** Approximate on-screen pixels per cell for each zoom level of each game renderer. */
 const PX_PER_CELL: Record<string, number[]> = {
-  ascii: [19, 14, 10, 5, 2.5],
-  pixel: [32, 24, 16, 8, 4, 2, 1],
-  iso: [39, 28, 20, 12.6, 8.4, 5.6],
-  sketch: [16, 11, 7, 4.5, 3, 2],
-  lumen: [16, 12, 8, 4],
-  "lumen-biomes": [16, 12, 8, 4],
-  voxel: [12, 7.5, 4.5, 2.7, 1.7],
-  lowpoly: [10, 6.4, 3.9, 2.5, 1.6],
+  ascii: [33, 25, 19, 14, 10, 5, 2.5],
+  pixel: [64, 48, 32, 24, 16, 8, 4, 2, 1],
+  iso: [78, 56, 39, 28, 20, 12.6, 8.4, 5.6],
+  sketch: [40, 28, 20, 16, 11, 7, 4.5, 3, 2],
+  lumen: [40, 28, 20, 16, 12, 8, 4],
+  "lumen-biomes": [40, 28, 20, 16, 12, 8, 4],
+  voxel: [29, 19, 12, 7.5, 4.5, 2.7, 1.7],
+  lowpoly: [26, 16, 10, 6.4, 3.9, 2.5, 1.6],
 };
 
 const BLURBS: Record<string, string> = {

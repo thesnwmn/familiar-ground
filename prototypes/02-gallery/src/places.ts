@@ -86,8 +86,10 @@ export interface Zoom {
 }
 
 export const ZOOMS: Zoom[] = [
+  { id: "upclose", name: "Up close", scale: 40 },
+  { id: "foot", name: "On foot", scale: 22 },
   { id: "close", name: "Close", scale: 12 },
-  { id: "game", name: "Game", scale: 7 },
+  { id: "game", name: "Vehicle", scale: 7 },
   { id: "mid", name: "Street", scale: 4 },
   { id: "far", name: "District", scale: 1.25 },
 ];

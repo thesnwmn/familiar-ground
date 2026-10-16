@@ -6,6 +6,8 @@ import type { Renderer, View } from "./types.ts";
 
 /** Larger glyphs when zoomed in, then several map cells per character when zoomed out. */
 const LEVELS = [
+  { fontSize: 56, step: 1, speed: 0.5 },
+  { fontSize: 42, step: 1, speed: 0.65 },
   { fontSize: 32, step: 1, speed: 1 },
   { fontSize: 24, step: 1, speed: 1 },
   { fontSize: 16, step: 1, speed: 0.85 },

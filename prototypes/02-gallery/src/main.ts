@@ -24,7 +24,7 @@ const ANGLES = ["0", "30", "45", "90", "180", "auto"];
 
 const state = {
   places: (params.get("places")?.split(",") ?? (spots.length ? spots.map((s) => s.id) : DEFAULT_PLACES)).filter((id) => PLACES.some((p) => p.id === id)),
-  zooms: params.get("zooms")?.split(",") ?? ZOOMS.map((z) => z.id),
+  zooms: params.get("zooms")?.split(",") ?? ["foot", "close", "game", "mid"],
   groups: params.get("groups")?.split(",") ?? GROUPS,
   tiers: params.get("tiers")?.split(",") ?? ["A", "B", "C", "D"],
   size: (params.get("size") as SizeKey) in SIZES ? (params.get("size") as SizeKey) : ("m" as SizeKey),
