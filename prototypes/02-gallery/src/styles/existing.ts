@@ -12,11 +12,21 @@ const PX_PER_CELL: Record<string, number[]> = {
   sketch: [40, 28, 20, 16, 11, 7, 4.5, 3, 2],
   lumen: [40, 28, 20, 16, 12, 8, 4],
   "lumen-biomes": [40, 28, 20, 16, 12, 8, 4],
+  "lumen-hd": [40, 32, 24, 16, 8],
+  "lumen-hd-day": [40, 32, 24, 16, 8],
+  "lumen-hd-night": [40, 32, 24, 16, 8],
+  "lumen-hd-rain": [40, 32, 24, 16, 8],
+  "lumen-hd-cycle": [40, 32, 24, 16, 8],
   voxel: [29, 19, 12, 7.5, 4.5, 2.7, 1.7],
   lowpoly: [26, 16, 10, 6.4, 3.9, 2.5, 1.6],
 };
 
 const BLURBS: Record<string, string> = {
+  "lumen-hd": "Lumen HD: smooth real shapes, chunky pixel textures, live buildings, traffic, people, pigeons, smoke, water and lamps. Golden hour.",
+  "lumen-hd-day": "Lumen HD by day: sun shadows, butterflies, falling leaves.",
+  "lumen-hd-night": "Lumen HD at night: lamps, lit windows, neon, moths, fireflies, your torch.",
+  "lumen-hd-rain": "Lumen HD in the rain: wet streets, puddles, splashes, neon reflections.",
+  "lumen-hd-cycle": "Lumen HD through a four-minute day and night.",
   ascii: "Roguelike glyphs, one cell per character.",
   pixel: "Procedural 8×8 tiles in a 3/4 view.",
   iso: "SimCity-style isometric columns.",

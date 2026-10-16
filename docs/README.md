@@ -54,3 +54,4 @@ Do that and "pixel art post-apocalyptic London" and "ASCII medieval Tokyo" are t
 5. [Prior art](05-prior-art.md): projects that already do parts of this.
 6. [Roadmap and risks](06-roadmap.md): a phased prototype plan and the main pitfalls.
 7. [Styles for play](07-styles-for-play.md): which style-lab looks work as a game view, ranked, plus the recommended camera, visibility and interiors.
+8. [Lumen HD](08-lumen-hd.md): smooth shapes with pixel materials, live buildings, life, light and sound, in oblique or perspective.
