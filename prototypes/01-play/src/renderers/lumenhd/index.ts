@@ -290,6 +290,11 @@ export class LumenHDRenderer implements Renderer {
     const margin = 4;
     const litChance = Math.max(0.03, bakeMood.litWindows * Math.min(1, mood.dark * 1.5 + 0.1));
     const drawn: { b: SceneBuilding; plan: Plan; o: number }[] = [];
+    const facing = view.player.fx < 0 && Math.abs(view.player.fx) >= Math.abs(view.player.fy) ? 2 : view.player.fx > 0 && Math.abs(view.player.fx) >= Math.abs(view.player.fy) ? 3 : view.player.fy < 0 ? 1 : 0;
+    const step = moving ? Math.floor(this.walked * 4) : 0;
+    const playerO = order(this.pos.x, this.pos.y + 0.01);
+    const px = Math.round(X(this.pos.x));
+    const py = Math.round(Y(this.pos.y + 0.35));
     for (const b of sc.buildings) {
       const bb = bbox(b);
       if (X(bb.maxX) < -W * 0.3 || X(bb.minX) > W * 1.3 || Y(bb.maxY) < -H * 0.2 || Y(bb.minY) > H * 1.6) continue;
@@ -299,8 +304,37 @@ export class LumenHDRenderer implements Renderer {
       const ny = Math.max(bb.minY, Math.min(camY, bb.maxY));
       const o = cam.mode === "oblique" ? bb.maxY : -Math.hypot(nx - camX, ny - camY);
       drawn.push({ b, plan, o });
-      items.push({ o, draw: () => drawBuilding(ctx, g, b, plan, cam, X, Y, k, this.paint!, litChance, lights) });
+      items.push({ o, draw: () => {
+        // Buildings between you and the camera fade, so you can always see yourself.
+        const fade = o > playerO && covers(b, plan, cam, X, Y, k, px, py - 5 * k);
+        ctx.globalAlpha = g.globalAlpha = fade ? 0.38 : 1;
+        drawBuilding(ctx, g, b, plan, cam, X, Y, k, this.paint!, litChance, lights);
+        ctx.globalAlpha = g.globalAlpha = 1;
+      } });
     }
+    // Lamp posts.
+    for (const tl of visible)
+      for (const l of tl.lights) {
+        if (l.kind !== "lamp") continue;
+        items.push({ o: order(l.x, l.y), draw: () => {
+          const x = X(l.x);
+          const y = Y(l.y);
+          const m = lift(cam, 13 * k);
+          const tx = m.a * x + m.e;
+          const ty = m.d * y + m.f;
+          ctx.strokeStyle = "#3c3c44";
+          ctx.lineWidth = Math.max(1, k);
+          ctx.lineCap = "butt";
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(tx, ty);
+          ctx.stroke();
+          ctx.fillStyle = "#3c3c44";
+          ctx.fillRect(tx - 1.5 * k, ty - k, 3 * k, k);
+          g.fillStyle = "rgb(255,236,190)";
+          g.fillRect(tx - 1.5 * k, ty, 3 * k, k);
+        } });
+      }
     const trees: TreeSpot[] = [];
     for (const tl of visible) for (const tr of tl.trees) trees.push(tr);
     const canopyAlpha = (tr: TreeSpot) => (Math.hypot(tr.x - camX, tr.y - 0.8 - camY) < tr.radius / T + 0.3 ? 0.45 : 1);
@@ -337,15 +371,10 @@ export class LumenHDRenderer implements Renderer {
       }
     }
     // The player.
-    const facing = view.player.fx < 0 && Math.abs(view.player.fx) >= Math.abs(view.player.fy) ? 2 : view.player.fx > 0 && Math.abs(view.player.fx) >= Math.abs(view.player.fy) ? 3 : view.player.fy < 0 ? 1 : 0;
-    const step = moving ? Math.floor(this.walked * 4) : 0;
-    const playerO = order(this.pos.x, this.pos.y + 0.01);
     items.push({ o: playerO, draw: () => drawPerson(ctx, Math.round(X(this.pos.x)), Math.round(Y(this.pos.y + 0.35)), k, PLAYER_LOOK, facing, step) });
     items.sort((a, b) => a.o - b.o);
     for (const it of items) it.draw();
     // See-through silhouette when a building is between you and the camera.
-    const px = Math.round(X(this.pos.x));
-    const py = Math.round(Y(this.pos.y + 0.35));
     if (drawn.some((d) => d.o > playerO && covers(d.b, d.plan, cam, X, Y, k, px, py - 4 * k))) drawPerson(ctx, px, py, k, PLAYER_LOOK, facing, step, true);
 
     // --- Air: smoke and steam, leaves, fireflies, moths, rain ---
@@ -473,10 +502,20 @@ export class LumenHDRenderer implements Renderer {
     const sprite = canopy(tr.radius, tr.variant, k, autumn ? CANOPY_AUTUMN : CANOPY[tr.variant]!);
     const phase = r01(Math.round(tr.x * 8), Math.round(tr.y * 8), 1) * 6.28;
     const sway = (Math.sin(t * 1.1 + phase + tr.x * 0.2) + Math.sin(t * 2.3 + phase) * 0.35) * k * 0.7;
-    const base = lift(cam, 9 * k);
     const x = X(tr.x);
     const y = Y(tr.y);
-    const top = { x: base.a * x + base.e, y: base.d * y + base.f };
+    // Trunk from the ground up to the crown, then the crown centred on its top.
+    const t1 = lift(cam, 7 * k);
+    const tt = { x: t1.a * x + t1.e, y: t1.d * y + t1.f };
+    ctx.strokeStyle = "#4a3426";
+    ctx.lineWidth = 2 * k;
+    ctx.lineCap = "butt";
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(tt.x, tt.y);
+    ctx.stroke();
+    const c = lift(cam, (7 + tr.radius * 0.55) * k);
+    const top = { x: c.a * x + c.e, y: c.d * y + c.f };
     ctx.globalAlpha = alpha;
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(sprite, Math.round(top.x - sprite.width / 2 + sway), Math.round(top.y - sprite.height / 2));

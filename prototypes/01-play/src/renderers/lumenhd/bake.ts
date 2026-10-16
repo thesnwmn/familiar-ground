@@ -310,8 +310,6 @@ export function bakeTile(world: World, seed: number, tex: Textures, tx: number, 
     sh.beginPath();
     sh.ellipse(x + t.radius * k * mood.sun[0] * 1.6, y + t.radius * k * mood.sun[1] * 0.8 - t.radius * k * 0.2, t.radius * k * 0.95, t.radius * k * 0.7, 0, 0, Math.PI * 2);
     sh.fill();
-    R(tc, x, y, -1, -8, 2, 8, "#4a3426");
-    R(tc, x, y, -1, -8, 1, 8, "#6a4c36");
   }
 
   let waterCanvas: HTMLCanvasElement | null = null;
@@ -374,8 +372,8 @@ export function bakeTile(world: World, seed: number, tex: Textures, tx: number, 
         }
       });
       // Parked cars along quieter streets.
-      if (r.ground === Ground.ROAD_MINOR && r.width >= 3) {
-        along(r.points, 2.6, h + 1, (p, n, i, dir, s, len) => {
+      if (r.ground === Ground.ROAD_MINOR && r.width >= 3 && r.width < 6) {
+        along(r.points, 3.5, h + 1, (p, n, i, dir, s, len) => {
           if (s < 4 || s > len - 4 || crossing(p, r)) return; // keep junctions clear
           for (const side of [-1, 1]) {
             if (r01(h, i, side + 20) > 0.45) continue;
@@ -408,9 +406,7 @@ export function bakeTile(world: World, seed: number, tex: Textures, tx: number, 
   function lampPost(x: number, y: number, gx: number, gy: number, salt: number): void {
     sh.fillRect(x, y - k * 0.5, 7 * k, k); // long thin shadow
     R(tc, x, y, -1, -1, 2, 2, "#2a2a30");
-    R(tc, x, y, -0.5, -13, 1, 13, "#3c3c44");
-    R(tc, x, y, -1.5, -14, 3, 1, "#3c3c44");
-    R(gl, x, y, -1.5, -13, 3, 1, "rgb(255,236,190)");
+    // The pole and head are drawn live (depth-sorted, and leaning in perspective).
     if (inTile(gx, gy)) lights.push({ x: gx, y: gy, r: 6.5, color: [255, 196, 130], kind: "lamp", phase: r01(salt, 1) });
   }
   function bench(x: number, y: number, dir: Point): void {

@@ -91,7 +91,8 @@ export class Life {
           const p = toPath(offsetLine(r.points, side * (r.width / 2 + 0.9)));
           if (p) this.paths.push(p);
         }
-        if (r.width >= 3) {
+        // Traffic on main roads and wide streets; quieter streets are for parking.
+        if ((r.ground === Ground.ROAD_MAJOR && r.width >= 3) || r.width >= 6) {
           for (const side of [-1, 1]) {
             const pts = offsetLine(r.points, side * r.width * 0.25);
             const p = toPath(side > 0 ? pts : [...pts].reverse());
