@@ -9,6 +9,11 @@ export const STYLES: StyleInfo[] = [
   { id: "lumen-biomes", label: "Lumen + biomes", load: async () => new (await import("./renderers/lumen.ts")).LumenRenderer(true) },
   { id: "sketch", label: "Sketch", load: async () => new (await import("./renderers/sketch.ts")).SketchRenderer() },
   { id: "voxel", label: "Voxel 3D", load: async () => new (await import("./renderers/three/voxel.ts")).VoxelRenderer() },
+  { id: "lumen-hd", label: "Lumen HD: golden hour", load: async () => new (await import("./renderers/lumenhd/index.ts")).LumenHDRenderer("golden") },
+  { id: "lumen-hd-day", label: "Lumen HD: day", load: async () => new (await import("./renderers/lumenhd/index.ts")).LumenHDRenderer("day") },
+  { id: "lumen-hd-night", label: "Lumen HD: night", load: async () => new (await import("./renderers/lumenhd/index.ts")).LumenHDRenderer("night") },
+  { id: "lumen-hd-rain", label: "Lumen HD: rainy night", load: async () => new (await import("./renderers/lumenhd/index.ts")).LumenHDRenderer("rain") },
+  { id: "lumen-hd-cycle", label: "Lumen HD: day/night cycle", load: async () => new (await import("./renderers/lumenhd/index.ts")).LumenHDRenderer("cycle") },
   { id: "lowpoly", label: "Low-poly 3D", load: async () => new (await import("./renderers/three/lowpoly.ts")).LowPolyRenderer() },
 ];
 
